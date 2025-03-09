@@ -3,6 +3,7 @@ let currentSession = null;
 let outputEventSource = null;
 
 // DOM Elements
+const uploadSection=document.getElementById('uploadSection')
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const configSection = document.getElementById('configSection');
@@ -257,12 +258,14 @@ async function handleAnalysis(e) {
 
 // UI Updates
 function showConfigSection() {
-    dropZone.style.display = 'none';
+    uploadSection.style.display = 'none';
     configSection.style.display = 'block';
+    outputSection.style.display = 'none';
     updateCommandPreview();
 }
 
 function showOutputSection() {
+    uploadSection.style.display = 'none';
     configSection.style.display = 'none';
     outputSection.style.display = 'block';
     document.querySelector('.output-actions').style.display = 'none';
@@ -347,7 +350,7 @@ function resetUI() {
     analysisForm.reset();
     
     // Reset UI
-    dropZone.style.display = 'block';
+    uploadSection.style.display = 'block';
     configSection.style.display = 'none';
     outputSection.style.display = 'none';
     outputText.textContent = '';
