@@ -28,6 +28,56 @@ clientSelect.addEventListener('change', toggleClientSettings);
 downloadResults.addEventListener('click', downloadAnalysisResults);
 newAnalysis.addEventListener('click', resetUI);
 
+// Initialize configuration on page load
+document.addEventListener('DOMContentLoaded', () => {
+    // Load default config as soon as the page loads
+    loadDefaultConfig();
+});
+
+// Configuration loading via API endpoint
+function loadDefaultConfig() {
+    // Call a server endpoint that will read and return the config
+    fetch('/get_config')
+        .then(response => {
+            if (!response.ok) {
+                console.warn(`Could not load configuration: ${response.status}`);
+                return null;
+            }
+            return response.json();
+        })
+        .then(config => {
+            if (config) {
+                initializeFormFromConfig(config);
+                updateCommandPreview();
+                console.log('Configuration loaded successfully');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading configuration:', error);
+            // Silently continue without the config
+        });
+}
+
+function initializeFormFromConfig(config) {
+    // Clear existing form values first
+    analysisForm.reset();
+    
+    // ollama
+    document.getElementById('ollama-url').value   = config.clients.ollama.url
+    document.getElementById('ollama-model').value = config.clients.ollama.model
+
+    // openai
+    document.getElementById('api-key').value    = config.clients.openai_api.api_key
+    document.getElementById('api-url').value    = config.clients.openai_api.api_url
+    document.getElementById('api-model').value  = config.clients.openai_api.model
+   
+    // Set client type first as it affects which fields are visible
+    if (config.clients.default) {
+        clientSelect.value = config.clients.default;
+        toggleClientSettings();
+    }
+}
+
 // File Upload Handlers
 function handleDragOver(e) {
     e.preventDefault();
@@ -85,12 +135,48 @@ async function handleFile(file) {
     }
 }
 
+function getArgsFromFormData( data ){ // FormData type
+
+    // This function filters out no active client form data
+    // It detects the active client and tests keys that are client dependent
+    //
+    var args = {}
+    var active_client = false;
+
+    for (var [key, value] of data.entries()) {
+        
+        
+        if (key == 'client'){
+            active_client = value // active client found!
+        }
+
+        if (value) { // Ignore empty args
+            // client key-values are formatted client.key
+            var client = false
+            if (key.includes('.')) {
+                [client, key] = key.split('.');
+            }
+            
+            // skip all non active client key-values
+            if (client && client != active_client){
+                continue;
+            }
+
+            // arg belongs to active client or is clientless
+            args[key] = value
+        }
+    }
+
+    return args
+}
+
 // Analysis Handlers
 async function handleAnalysis(e) {
     e.preventDefault();
     if (!currentSession) return;
     
-    const formData = new FormData(analysisForm);
+    const data = new FormData(analysisForm)
+    const args = getArgsFromFormData(data)
     showOutputSection();
     
     // Close any existing event source
@@ -107,9 +193,10 @@ async function handleAnalysis(e) {
     
     try {
         // Make POST request to start analysis
+        console.log('POST /analyze',args)
         const response = await fetch(`/analyze/${currentSession}`, {
             method: 'POST',
-            body: formData
+            body: args
         });
         
         if (!response.ok) {
@@ -180,9 +267,11 @@ function showOutputSection() {
 
 function toggleClientSettings() {
     const client = clientSelect.value;
+    
     if (client === 'ollama') {
         ollamaSettings.style.display = 'block';
         openaiSettings.style.display = 'none';
+        
     } else {
         ollamaSettings.style.display = 'none';
         openaiSettings.style.display = 'block';
@@ -192,14 +281,19 @@ function toggleClientSettings() {
 
 function updateCommandPreview() {
     const formData = new FormData(analysisForm);
+    const args = getArgsFromFormData(formData)
+
     let command = 'video-analyzer <video_path>';
     
-    for (const [key, value] of formData.entries()) {
-        if (value) {
-            if (key === 'keep-frames') {
-                command += ` --${key}`;
-            } else {
-                command += ` --${key} ${value}`;
+    for (const key in args) {
+        if (args.hasOwnProperty(key)) {
+            const value = args[key];
+            if (value) {
+                if (key === 'keep-frames') {
+                    command += ` --${key}`;
+                } else {
+                    command += ` --${key} ${value}`;
+                }
             }
         }
     }
@@ -257,7 +351,7 @@ function resetUI() {
     fileInput.value = '';
     
     // Reset client settings
-    toggleClientSettings();
+    loadDefaultConfig();
 }
 
 // Initialize UI

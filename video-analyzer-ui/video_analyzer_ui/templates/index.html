@@ -44,25 +44,27 @@
                     <div id="ollamaSettings">
                         <div class="form-group">
                             <label for="ollama-url">Ollama URL:</label>
-                            <input type="text" id="ollama-url" name="ollama-url" value="http://localhost:11434">
+                            <input type="text" id="ollama-url" name="ollama.ollama-url" value="http://localhost:11434">
+                        </div>
+                        <div class="form-group">
+                            <label for="ollama-model">Vision Model:</label>
+                            <input type="text" id="ollama-model" name="ollama.model" placeholder="llama3.2-vision">
                         </div>
                     </div>
 
                     <div id="openaiSettings" style="display: none;">
                         <div class="form-group">
                             <label for="api-key">API Key: *</label>
-                            <input type="password" id="api-key" name="api-key">
+                            <input type="password" id="api-key" name="openai_api.api-key">
                         </div>
                         <div class="form-group">
                             <label for="api-url">API URL: *</label>
-                            <input type="text" id="api-url" name="api-url" placeholder="https://openrouter.ai/api/v1">
+                            <input type="text" id="api-url" name="openai_api.api-url" placeholder="https://api.openai.com/v1">
                         </div>
-                    </div>
-
-                    <!-- Model Configuration -->
-                    <div class="form-group">
-                        <label for="model">Vision Model:</label>
-                        <input type="text" id="model" name="model" placeholder="llama3.2-vision">
+                        <div class="form-group">
+                            <label for="api-model">Vision Model:</label>
+                            <input type="text" id="api-model" name="openai_api.model" placeholder="gpt-4o">
+                        </div>
                     </div>
 
                     <!-- Processing Options -->
@@ -79,10 +81,11 @@
                     <div class="form-group">
                         <label for="whisper-model">Whisper Model:</label>
                         <select id="whisper-model" name="whisper-model">
+                            <option value="none" selected>None</option>
                             <option value="tiny">Tiny</option>
                             <option value="base">Base</option>
                             <option value="small">Small</option>
-                            <option value="medium" selected>Medium</option>
+                            <option value="medium">Medium</option>
                             <option value="large">Large</option>
                         </select>
                     </div>

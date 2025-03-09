@@ -85,6 +85,7 @@ class VideoProcessor:
             if frame_count % sample_interval == 0:
                 score = self._calculate_frame_difference(frame, prev_frame)
                 if score > self.FRAME_DIFFERENCE_THRESHOLD:
+                    logger.info(f'key_frame : {frame_count}')
                     frame_candidates.append((frame_count, frame, score))
                 prev_frame = frame.copy()
                 
@@ -105,6 +106,7 @@ class VideoProcessor:
         self.frames = []
         for idx, (frame_num, frame, score) in enumerate(selected_frames):
             frame_path = self.output_dir / f"frame_{idx}.jpg"
+            logger.info(f'frame_path : {frame_path}')
             cv2.imwrite(str(frame_path), frame)
             timestamp = frame_num / fps
             self.frames.append(Frame(idx, frame_path, timestamp, score))

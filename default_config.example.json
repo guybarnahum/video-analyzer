@@ -1,14 +1,14 @@
 {
     "clients": {
-        "default": "ollama",
+        "default": "openai_api",
         "ollama": {
             "url": "http://localhost:11434",
             "model": "llama3.2-vision"
         },
         "openai_api": {
-            "api_key": "",
-            "model": "meta-llama/llama-3.2-11b-vision-instruct",
-            "api_url": "https://openrouter.ai/api/v1"
+            "api_key": "<openai_api_key>",
+            "model": "gpt-4o",
+            "api_url": "https://api.openai.com/v1"
         }
     },
     "prompt_dir": "prompts",

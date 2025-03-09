@@ -63,14 +63,14 @@ def main():
     parser.add_argument("--config", type=str, default="config",
                         help="Path to configuration directory")
     parser.add_argument("--output", type=str, help="Output directory for analysis results")
-    parser.add_argument("--client", type=str, help="Client to use (ollama or openrouter)")
+    parser.add_argument("--client", type=str, help="Client to use (ollama or openrouter or openai_api)")
     parser.add_argument("--ollama-url", type=str, help="URL for the Ollama service")
     parser.add_argument("--api-key", type=str, help="API key for OpenAI-compatible service")
     parser.add_argument("--api-url", type=str, help="API URL for OpenAI-compatible API")
     parser.add_argument("--model", type=str, help="Name of the vision model to use")
     parser.add_argument("--duration", type=float, help="Duration in seconds to process")
     parser.add_argument("--keep-frames", action="store_true", help="Keep extracted frames after analysis")
-    parser.add_argument("--whisper-model", type=str, help="Whisper model size (tiny, base, small, medium, large), or path to local Whisper model snapshot")
+    parser.add_argument("--whisper-model", type=str, help="Whisper model size (none, tiny, base, small, medium, large), or path to local Whisper model snapshot")
     parser.add_argument("--start-stage", type=int, default=1, help="Stage to start processing from (1-3)")
     parser.add_argument("--max-frames", type=int, default=sys.maxsize, help="Maximum number of frames to process")
     parser.add_argument("--log-level", type=str, default="INFO", 
@@ -99,6 +99,9 @@ def main():
 
     # Initialize components
     video_path = Path(args.video_path)
+    logger.info(f'args : {args}')
+    logger.info(f'Initialize components for {video_path}')
+
     output_dir = Path(config.get("output_dir"))
     client = create_client(config)
     model = get_model(config)
@@ -116,13 +119,21 @@ def main():
             # language (str): Language code for audio transcription (default: None)
             # whisper_model (str): Whisper model size or path (default: "medium")
             # device (str): Device to use for audio processing (default: "cpu")
-            logger.debug("Initializing audio processing...")
-            audio_processor = AudioProcessor(language=config.get("audio", {}).get("language", ""), 
-                                             model_size_or_path=config.get("audio", {}).get("whisper_model", "medium"),
-                                             device=config.get("audio", {}).get("device", "cpu"))
+            audio_path = None
+            whisper_model = config.get("audio", {}).get("whisper_model", "medium")
             
-            logger.info("Extracting audio from video...")
-            audio_path = audio_processor.extract_audio(video_path, output_dir)
+            if whisper_model == 'none':
+                logger.info("No audio processing...")
+            else:
+                logger.info(f"Initializing audio processing with whisper model {whisper_model}")
+                language = config.get("audio", {}).get("language", "")
+                device = config.get("audio", {}).get("device", "cpu")
+
+                audio_processor = AudioProcessor(language=language,
+                                                 model_size_or_path=whisper_model,
+                                                 device=device)       
+                logger.info("Extracting audio from video...")
+                audio_path = audio_processor.extract_audio(video_path, output_dir)
             
             if audio_path is None:
                 logger.debug("No audio found in video - skipping transcription")
@@ -134,11 +145,13 @@ def main():
                     logger.warning("Could not generate reliable transcript. Proceeding with video analysis only.")
             
             logger.info(f"Extracting frames from video using model {model}...")
+
             processor = VideoProcessor(
                 video_path, 
                 output_dir / "frames", 
                 model
             )
+            
             frames = processor.extract_keyframes(
                 frames_per_minute=config.get("frames", {}).get("per_minute", 60),
                 duration=config.get("duration"),

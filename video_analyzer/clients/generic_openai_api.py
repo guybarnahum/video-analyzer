@@ -28,6 +28,9 @@ class GenericOpenAIAPIClient(LLMClient):
         temperature: float = 0.2,
         num_predict: int = 256) -> Dict[Any, Any]:
         """Generate response from OpenAI-compatible API."""
+
+        logger.info(f'model : {model}')
+
         # Prepare request content
         if image_path:
             base64_image = self.encode_image(image_path)
@@ -84,7 +87,13 @@ class GenericOpenAIAPIClient(LLMClient):
                     
                 except json.JSONDecodeError:
                     raise Exception(f"Invalid JSON response: {response.text}")
-                    
+            
+            except requests.exceptions.HTTPError as e:
+        
+                err_msg = f'HTTPError {response.status_code} : {response.text}'
+                logger.error(err_msg)
+                raise Exception(err_msg)
+
             except Exception as e:
                 if attempt == self.max_retries - 1:  # Last attempt
                     raise Exception(f"An error occurred: {str(e)}")

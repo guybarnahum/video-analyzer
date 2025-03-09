@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import json
 import logging
 import os
 import subprocess
@@ -208,7 +209,24 @@ class VideoAnalyzerUI:
             except Exception as e:
                 logger.error(f"Error sending file: {e}")
                 return jsonify({'error': f'Error sending file: {str(e)}'}), 500
+        
+        @self.app.route('/get_config')
+        def get_config():
             
+            config_path = os.path.abspath('/app/config/default_config.json')
+            logger.info(f'config path : {config_path}')
+
+            try:
+                with open(config_path, 'r') as f:
+                    config = json.load(f)
+                return jsonify(config)
+            except FileNotFoundError as e:
+                logger.error(f'FileNotFoundError : {str(e)}')
+                return jsonify({"error": "Configuration file not found"}), 404
+            except json.JSONDecodeError as e:
+                logger.error(f'JSONDecodeError : {str(e)}')
+                return jsonify({"error": "Invalid JSON format in configuration file"}), 500
+
         @self.app.route('/cleanup/<session_id>', methods=['POST'])
         def cleanup_session(session_id):
             if session_id not in self.sessions:
