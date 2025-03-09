@@ -1,12 +1,18 @@
 import argparse
+
 from pathlib import Path
 import json
 import logging
+from pprint import pformat
 import shutil
 import sys
 from typing import Optional
 import torch
 import torch.backends.mps
+
+import cProfile
+import pstats
+import io
 
 from .config import Config, get_client, get_model
 from .frame import VideoProcessor
@@ -97,9 +103,13 @@ def main():
     config = Config(args.config)
     config.update_from_args(args)
 
+    # profile starts here
+    profiler = cProfile.Profile()
+    profiler.enable()
+
     # Initialize components
     video_path = Path(args.video_path)
-    logger.info(f'args : {args}')
+    logger.info(f'args : {pformat(vars(args),indent=4)}')
     logger.info(f'Initialize components for {video_path}')
 
     output_dir = Path(config.get("output_dir"))
@@ -201,19 +211,26 @@ def main():
             
         logger.info(f"Analysis complete. Results saved to {output_dir / 'analysis.json'}")
         
-        print("\nTranscript:")
         if transcript:
-            print(transcript.text)
+            logger.info("Transcript:\n{transcript.text}")
         else:
-            print("No reliable transcript available")
+            logger.info("No reliable transcript available")
             
         if video_description:
-            print("\nVideo Description:")
-            print(video_description.get("response", "No description generated"))
+            video_desc = video_description.get("response", "No description generated")
+            logger.info(f"Video Description: {video_desc}")
         
         if not config.get("keep_frames"):
             cleanup_files(output_dir)
             
+        # profiling ends here
+        profiler.disable()
+
+        s = io.StringIO()
+        ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
+        ps.print_stats(10)
+        logger.info("Profiler results:\n%s", s.getvalue())
+
     except Exception as e:
         logger.error(f"Error during video analysis: {e}")
         if not config.get("keep_frames"):

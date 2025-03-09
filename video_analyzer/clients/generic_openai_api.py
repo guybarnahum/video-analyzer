@@ -5,6 +5,7 @@ import re
 from typing import Optional, Dict, Any, Tuple
 from .llm_client import LLMClient
 import logging
+from pprint import pformat
 
 logger = logging.getLogger(__name__)
 
@@ -89,8 +90,12 @@ class GenericOpenAIAPIClient(LLMClient):
                     raise Exception(f"Invalid JSON response: {response.text}")
             
             except requests.exceptions.HTTPError as e:
-        
-                err_msg = f'HTTPError {response.status_code} : {response.text}'
+                try:
+                    json_data = json.loads(response.text)
+                    err_msg = f'HTTPError {response.status_code} : {pformat(json_data,indent=4)}'
+                except json.JSONDecodeError: # Fallback if the response isn't valid JSON
+                    err_msg = f'HTTPError {response.status_code} : {response.text}'
+                    
                 logger.error(err_msg)
                 raise Exception(err_msg)
 

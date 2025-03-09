@@ -59,7 +59,7 @@ class VideoAnalyzer:
         prompt = prompt.replace("{prompt}", self._format_user_prompt())
         prompt = f"{prompt}\nThis is frame {frame.number} captured at {frame.timestamp:.2f} seconds."
         
-        logger.info(f'prompt : `{prompt}`')
+        logger.info(f'prompt : `{prompt[:64]}{"..." if len(prompt) > 64 else ""}`')
 
         try:
             response = self.client.generate(
