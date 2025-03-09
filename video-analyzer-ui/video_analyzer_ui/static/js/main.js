@@ -196,7 +196,10 @@ async function handleAnalysis(e) {
         console.log('POST /analyze',args)
         const response = await fetch(`/analyze/${currentSession}`, {
             method: 'POST',
-            body: args
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(args)
         });
         
         if (!response.ok) {

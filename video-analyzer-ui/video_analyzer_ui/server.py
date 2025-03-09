@@ -87,7 +87,10 @@ class VideoAnalyzerUI:
             cmd = ['video-analyzer', session['video_path']]
             
             # Add optional parameters
-            for param, value in request.form.items():
+            params = request.get_json()
+            logger.info(f"params : {params}")
+            
+            for param, value in params.items():
                 if value:  # Only add parameters with values
                     if param in ['keep-frames', 'dev']:  # Flags without values
                         cmd.append(f'--{param}')
@@ -107,7 +110,8 @@ class VideoAnalyzerUI:
             
             # Store command in session for streaming
             session['cmd'] = cmd
-            
+            logger.info(f"cmd : {cmd}")
+
             return jsonify({'message': 'Analysis started'})
             
         @self.app.route('/analyze/<session_id>/stream')
