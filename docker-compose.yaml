@@ -1,0 +1,20 @@
+services:
+  server:
+    build: .
+    # container_name: video-analyzer
+    # restart: unless-stopped
+    volumes:
+      - ./data:/app/data      # Mount a local directory for input/output files
+      - pip_cache:/pip_cache  # Mount a volume for pip cache
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PIP_CACHE_DIR=/pip_cache
+    ports:
+      - "5000:5000"  # Ensure this line is here to map the container port to localhost
+    #command : ["bash"]
+    command: ["video-analyzer-ui", "--dev", "--host", "0.0.0.0", "--port", "5000"]
+
+# Define named volumes
+volumes:
+  pip_cache:
+    driver: local  # Ensure this is specified to define the pip_cache volume
