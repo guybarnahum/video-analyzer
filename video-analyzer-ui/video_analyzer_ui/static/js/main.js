@@ -187,11 +187,17 @@ async function handleAnalysis(e) {
     
     // Clear previous output and show loading
     outputText.textContent = '';
+
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'loading';
     loadingDiv.innerHTML = '<div class="loading-text">Analyzing video...</div>';
     outputText.parentElement.appendChild(loadingDiv);
-    
+
+    // Ensure the browser renders before measuring height
+    requestAnimationFrame(() => {
+        outputText.style.minHeight = `${loadingDiv.offsetHeight}px`;
+    });
+
     try {
         // Make POST request to start analysis
         console.log('POST /analyze',args)
@@ -225,7 +231,10 @@ async function handleAnalysis(e) {
         }
         
         outputText.textContent += event.data + '\n';
-        outputText.scrollTop = outputText.scrollHeight;
+        
+        requestAnimationFrame(() => {
+            outputText.scrollTop = outputText.scrollHeight;
+        });
         
         if (event.data.includes('Analysis completed successfully')) {
             outputEventSource.close();
