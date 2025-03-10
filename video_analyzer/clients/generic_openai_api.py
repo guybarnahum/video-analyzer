@@ -9,6 +9,12 @@ from pprint import pformat
 
 logger = logging.getLogger(__name__)
 
+TOKEN_PRICING = {
+    "llama3.2-vision": {"prompt": 0.005, "completion": 0.015},  # Example values (per 1K tokens)
+    "gpt-4-turbo": {"prompt": 0.01, "completion": 0.03},
+    "gpt-4o": {"prompt": 0.0025, "completion": 0.01},  # GPT-4o pricing (per 1K tokens)
+}
+
 # Constants
 DEFAULT_MAX_RETRIES = 3
 RATE_LIMIT_WAIT_TIME = 25  # seconds
@@ -20,12 +26,13 @@ class GenericOpenAIAPIClient(LLMClient):
         self.base_url = api_url.rstrip('/')  # Remove trailing slash if present
         self.generate_url = f"{self.base_url}/chat/completions"
         self.max_retries = max_retries
+        self.usage = {}
 
     def generate(self,
         prompt: str,
         image_path: Optional[str] = None,
         stream: bool = False,
-        model: str = "llama3.2-vision",
+        model: str = "gpt-4o",
         temperature: float = 0.2,
         num_predict: int = 256) -> Dict[Any, Any]:
         """Generate response from OpenAI-compatible API."""
@@ -83,8 +90,31 @@ class GenericOpenAIAPIClient(LLMClient):
                     message = json_response['choices'][0].get('message', {})
                     if not message or 'content' not in message:
                         raise Exception("No content in response message")
-                        
-                    return {"response": message['content']}
+                    
+                    # Extract token usage information
+                    usage = json_response.get('usage', {})
+                    prompt_tokens = usage.get('prompt_tokens', 0)
+                    completion_tokens = usage.get('completion_tokens', 0)
+                    total_tokens = usage.get('total_tokens', 0)
+
+                    # Calculate cost
+                    model_pricing = TOKEN_PRICING.get(model, {"prompt": 0.0, "completion": 0.0})
+
+                    cost = ((prompt_tokens * model_pricing["prompt"]) + (completion_tokens * model_pricing["completion"])) / 1000
+
+                    logger.info(f"Token Usage - Prompt: {prompt_tokens}, Completion: {completion_tokens}, Total: {total_tokens}")
+                    logger.info(f"Estimated Cost: ${cost:.6f}")
+
+                    return {
+                        "response": message['content'],
+                        "token_usage": {
+                            "prompt_tokens": prompt_tokens,
+                            "completion_tokens": completion_tokens,
+                            "total_tokens": total_tokens,
+                            "model_pricing": model_pricing,
+                            "cost": cost
+                        }
+                    }
                     
                 except json.JSONDecodeError:
                     raise Exception(f"Invalid JSON response: {response.text}")
