@@ -24,10 +24,7 @@ class VideoAnalyzerUI:
         
         # Ensure tmp directories exist
         self.tmp_root = Path(tempfile.gettempdir()) / 'video-analyzer-ui'
-        self.uploads_dir = self.tmp_root / 'uploads'
-        self.results_dir = self.tmp_root / 'results'
-        self.uploads_dir.mkdir(parents=True, exist_ok=True)
-        self.results_dir.mkdir(parents=True, exist_ok=True)
+        self.tmp_root.mkdir(parents=True, exist_ok=True)
         
         self.setup_routes()
         
@@ -36,6 +33,31 @@ class VideoAnalyzerUI:
         def index():
             return render_template('index.html')
             
+        @self.app.route('/serve_file/<session_id>/<filename>')
+        def serve_file(session_id, filename):
+            if session_id not in self.sessions:
+                logger.error('Invalid session_id {session_id}')
+                return jsonify({'error': 'Invalid session'}), 401
+
+            session_path = self.tmp_root / session_id
+            filepath = session_path / filename
+
+            try:
+                return send_file( filepath )
+
+            except FileNotFoundError:
+                logger.error('File not found - session_id : {session_id}, filename : {filename}, filepath : {filepath}')
+                return jsonify({'error': 'File not found'}), 404
+            
+            except PermissionError:
+                logger.error('Permission denied- session_id : {session_id}, filename : {filename}, filepath : {filepath}')
+                return jsonify({'error': 'Permission denied'}), 403
+            
+            except Exception as e:
+                logger.error('Unexpected error - session_id : {session_id}, filename : {filename}, filepath : {filepath}')
+                return jsonify({'error': 'Unexpected error'}), 500
+
+
         @self.app.route('/upload', methods=['POST'])
         def upload_file():
             if 'video' not in request.files:
@@ -50,25 +72,25 @@ class VideoAnalyzerUI:
                 
             try:
                 # Create session
-                session_id = str(uuid.uuid4())
-                session_upload_dir = self.uploads_dir / session_id
-                session_results_dir = self.results_dir / session_id
-                session_upload_dir.mkdir(parents=True)
-                session_results_dir.mkdir(parents=True)
+                session_id  = str(uuid.uuid4())
+                session_path = self.tmp_root / session_id
+                
+                session_path.mkdir(parents=True)
                 
                 # Save file
                 filename = secure_filename(file.filename)
-                filepath = session_upload_dir / filename
+                filepath = session_path / filename
                 file.save(filepath)
                 
                 self.sessions[session_id] = {
-                    'video_path': str(filepath),
-                    'results_dir': str(session_results_dir),
-                    'filename': filename
+                    'video_path' : str(filepath),
+                    'results_dir': str(session_path),
+                    'filename'   : filename
                 }
                 
                 return jsonify({
                     'session_id': session_id,
+                    'video_name': filename,
                     'message': 'File uploaded successfully'
                 })
                 
@@ -164,7 +186,7 @@ class VideoAnalyzerUI:
         @self.app.route('/results/<session_id>')
         def get_results(session_id):
             if session_id not in self.sessions:
-                return jsonify({'error': 'Invalid session'}), 404
+                return jsonify({'error': 'Invalid session'}), 401
                 
             session = self.sessions[session_id]
             results_dir = Path(session['results_dir'])
@@ -230,6 +252,7 @@ class VideoAnalyzerUI:
             except json.JSONDecodeError as e:
                 logger.error(f'JSONDecodeError : {str(e)}')
                 return jsonify({"error": "Invalid JSON format in configuration file"}), 500
+
 
         @self.app.route('/cleanup/<session_id>', methods=['POST'])
         def cleanup_session(session_id):
