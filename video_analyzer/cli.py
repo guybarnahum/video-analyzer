@@ -112,7 +112,8 @@ def main():
     logger.info(f'args : {pformat(vars(args),indent=4)}')
     logger.info(f'Initialize components for {video_path}')
 
-    output_dir = Path(config.get("output_dir"))
+    output_dir_str = config.get("output_dir")
+    output_dir = Path(output_dir_str)
     client = create_client(config)
     model = get_model(config)
     prompt_loader = PromptLoader(config.get("prompt_dir"), config.get("prompts", []))
@@ -173,10 +174,18 @@ def main():
             logger.info("Analyzing frames...")
             analyzer = VideoAnalyzer(client, model, prompt_loader, config.get("prompt", ""))
             frame_analyses = []
+            token_usage = {
+                'total_tokens' : 0,
+                'total_cost' : 0,
+            }
+
             for frame in frames:
                 analysis = analyzer.analyze_frame(frame)
                 frame_analyses.append(analysis)
-                
+                if 'token_usage' in analysis:
+                    token_usage['total_tokens'] += analysis['token_usage']['total_tokens']
+                    token_usage['total_cost'  ] += analysis['token_usage']['cost'  ]
+
         # Stage 3: Video Reconstruction
         if args.start_stage <= 3:
             logger.info("Reconstructing video description...")
@@ -203,6 +212,7 @@ def main():
                 "segments": transcript.segments if transcript else None
             } if transcript else None,
             "frame_analyses": frame_analyses,
+            "token_usage" : token_usage,
             "video_description": video_description
         }
         
