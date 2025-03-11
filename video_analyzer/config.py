@@ -54,19 +54,22 @@ class Config:
 
     def get(self, key: str, default: Any = None) -> Any:
         """Get configuration value with optional default."""
-        return self.config.get(key, default)
+        val = self.config.get(key, default)
+        # logger.debug(f'config get - key : {key}, default : {default} => val : {val}')
+        return val
 
     def update_from_args(self, args: argparse.Namespace):
-        """Update configuration with command line arguments."""
+        """Update configuration with command-line arguments."""
         for key, value in vars(args).items():
             if value is not None:  # Only update if argument was provided
-                if key == "client":
+                if key == "output":
+                    self.config["output_dir"] = value  # Ensure the config reflects this update
+                elif key == "client":
                     self.config["clients"]["default"] = value
                 elif key == "ollama_url":
                     self.config["clients"]["ollama"]["url"] = value
                 elif key == "api_key":
                     self.config["clients"]["openai_api"]["api_key"] = value
-                    # If key is provided but no client specified, use OpenAI API
                     if not args.client:
                         self.config["clients"]["default"] = "openai_api"
                 elif key == "api_url":
@@ -76,9 +79,8 @@ class Config:
                     self.config["clients"][client]["model"] = value
                 elif key == "prompt":
                     self.config["prompt"] = value
-                #overide audio config
                 elif key == "whisper_model":
-                    self.config["audio"]["whisper_model"] = value  # default is 'medium'
+                    self.config["audio"]["whisper_model"] = value
                 elif key == "language":
                     if value is not None:
                         self.config["audio"]["language"] = value
@@ -86,6 +88,7 @@ class Config:
                     self.config["audio"]["device"] = value
                 elif key not in ["start_stage", "max_frames"]:  # Ignore these as they're command-line only
                     self.config[key] = value
+
 
     def save_user_config(self):
         """Save current configuration to user config file."""
