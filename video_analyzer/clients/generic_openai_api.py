@@ -37,8 +37,6 @@ class GenericOpenAIAPIClient(LLMClient):
         num_predict: int = 256) -> Dict[Any, Any]:
         """Generate response from OpenAI-compatible API."""
 
-        logger.info(f'model : {model}')
-
         # Prepare request content
         if image_path:
             base64_image = self.encode_image(image_path)
@@ -91,6 +89,8 @@ class GenericOpenAIAPIClient(LLMClient):
                     if not message or 'content' not in message:
                         raise Exception("No content in response message")
                     
+                    logger.info(f'>> {message}')
+
                     # Extract token usage information
                     usage = json_response.get('usage', {})
                     prompt_tokens = usage.get('prompt_tokens', 0)
@@ -127,28 +127,25 @@ class GenericOpenAIAPIClient(LLMClient):
                     err_msg = f'HTTPError {response.status_code} : {response.text}'
                     
                 logger.error(err_msg)
-                raise Exception(err_msg)
+
+                if 'Retry-After' in e.response.headers and attempt < self.max_retries:
+
+                    try:
+                        wait_time = int(e.response.headers['Retry-After'])
+                        logger.info(f"Using Retry-After header value: {wait_time} seconds")
+                    except (ValueError, TypeError):
+                        wait_time = RATE_LIMIT_WAIT_TIME
+                        logger.warning("Invalid Retry-After header value, using default wait time")
+
+                    logger.warning(f"Request failed (attempt {attempt + 1}/{self.max_retries}): {str(e)}")
+                    logger.warning(f"Waiting {wait_time} seconds before retry")
+                    time.sleep(wait_time)
+                else:
+                    raise Exception(err_msg)
 
             except Exception as e:
-                if attempt == self.max_retries - 1:  # Last attempt
-                    raise Exception(f"An error occurred: {str(e)}")
+                raise Exception(f"An error occurred: {str(e)}")
                 
-                # Get wait time based on error
-                wait_time = RATE_LIMIT_WAIT_TIME
-                if isinstance(e, requests.exceptions.HTTPError) and e.response.status_code == 429:
-                    # Try to get wait time from Retry-After header
-                    if 'Retry-After' in e.response.headers:
-                        try:
-                            wait_time = int(e.response.headers['Retry-After'])
-                            logger.info(f"Using Retry-After header value: {wait_time} seconds")
-                        except (ValueError, TypeError):
-                            logger.warning("Invalid Retry-After header value, using default wait time")
-                else:
-                    wait_time = DEFAULT_WAIT_TIME
-                
-                logger.warning(f"Request failed (attempt {attempt + 1}/{self.max_retries}): {str(e)}")
-                logger.warning(f"Waiting {wait_time} seconds before retry")
-                time.sleep(wait_time)
 
     def _handle_streaming_response(self, response: requests.Response) -> Dict[Any, Any]:
         """Handle streaming response from API.
