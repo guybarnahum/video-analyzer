@@ -9,8 +9,10 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Frame:
+    ix: int
     number: int
     path: Path
+    name: str
     timestamp: float
     score: float
 
@@ -22,7 +24,7 @@ class VideoProcessor:
         self.video_path = video_path
         self.output_dir = output_dir
         self.model = model
-        self.frames: List[Frame] = []
+        self.frames = []
         
     def _calculate_frame_difference(self, frame1: np.ndarray, frame2: np.ndarray) -> float:
         """Calculate the difference between two frames using absolute difference."""
@@ -103,13 +105,25 @@ class VideoProcessor:
         else:
             selected_frames = selected_candidates
 
+        selected_frames.sort(key=lambda x: x[0]) # topple : (frame_num, frame, score)
+
         self.frames = []
         for idx, (frame_num, frame, score) in enumerate(selected_frames):
-            frame_path = self.output_dir / f"frame_{idx}.jpg"
+            
+            name = f"frame_{idx}.jpg"
+            frame_path = self.output_dir / name
             logger.info(f'frame_path : {frame_path}')
             cv2.imwrite(str(frame_path), frame)
             timestamp = frame_num / fps
-            self.frames.append(Frame(idx, frame_path, timestamp, score))
-        
+
+            self.frames.append({
+                'idx'  : idx,
+                'num'  : frame_num,
+                'path' : str(frame_path),
+                'name' : name,
+                'timestamp' : timestamp,
+                'score' : score
+            })
+
         logger.info(f"Extracted {len(self.frames)} frames from video (target was {target_frames})")
         return self.frames
