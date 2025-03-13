@@ -6,6 +6,11 @@ let outputEventSource = null;
 const uploadSection=document.getElementById('uploadSection')
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
+const videoSection = document.getElementById('videoSection');
+const videoPlayer = document.getElementById('videoPlayer');
+const analysisContainer = document.getElementById("video-summary-analysis");
+    
+const framesSection = document.getElementById("framesSection");
 const configSection = document.getElementById('configSection');
 const outputSection = document.getElementById('outputSection');
 const analysisForm = document.getElementById('analysisForm');
@@ -54,7 +59,7 @@ function loadDefaultConfig() {
             }
         })
         .catch(error => {
-            console.error('Error loading configuration:', error);
+            console.warn('Error loading configuration:', error);
             // Silently continue without the config
         });
 }
@@ -95,18 +100,12 @@ function handleDrop(e) {
     dropZone.classList.remove('drag-over');
     
     const file = e.dataTransfer.files[0];
-    if (isValidVideoFile(file)) {
-        handleFile(file);
-    } else {
-        alert('Please upload a valid video file (MP4, AVI, MOV, or MKV)');
-    }
+    if (file) handleFile(file);
 }
 
 function handleFileSelect(e) {
     const file = e.target.files[0];
-    if (file && isValidVideoFile(file)) {
-        handleFile(file);
-    }
+    if (file) handleFile(file);
 }
 
 function isValidVideoFile(file) {
@@ -114,7 +113,26 @@ function isValidVideoFile(file) {
     return validTypes.some(type => file.name.toLowerCase().endsWith(type));
 }
 
+function loadVideoSection(data, auto_play = false){
+
+    url = 'serve_file/' + data.session_id + '/' + data.video_name
+
+    if (videoPlayer) {
+        videoPlayer.src = url;
+        videoPlayer.load(); // Ensures the new source is loaded
+        if (auto_play) videoPlayer.play(); // Optionally auto-play the video
+    } else {
+        console.warn("Video player not found!");
+    }
+}
+
 async function handleFile(file) {
+
+    if (!isValidVideoFile(file)) {
+        alert('Please upload a valid video file (MP4, AVI, MOV, or MKV)');
+        return
+    }
+
     const formData = new FormData();
     formData.append('video', file);
     
@@ -126,7 +144,9 @@ async function handleFile(file) {
         
         const data = await response.json();
         if (response.ok) {
+            console.log(data)
             currentSession = data.session_id;
+            loadVideoSection(data);
             showConfigSection();
         } else {
             throw new Error(data.error || 'Upload failed');
@@ -172,6 +192,8 @@ function getArgsFromFormData( data ){ // FormData type
 }
 
 // Analysis Handlers
+let poller = false
+
 async function handleAnalysis(e) {
     e.preventDefault();
     if (!currentSession) return;
@@ -180,6 +202,9 @@ async function handleAnalysis(e) {
     const args = getArgsFromFormData(data)
     showOutputSection();
     
+    poller = createPollingProcess(currentSession, 5000); // Poll every 5 second
+    poller.startPolling()
+
     // Close any existing event source
     if (outputEventSource) {
         outputEventSource.close();
@@ -218,6 +243,9 @@ async function handleAnalysis(e) {
         document.querySelector('.output-actions').style.display = 'flex';
         downloadResults.style.display = 'none';
         loadingDiv.remove();
+
+        if (poller) poller.stopPolling(); 
+        poller = false
         return;
     }
 
@@ -240,12 +268,16 @@ async function handleAnalysis(e) {
             outputEventSource.close();
             document.querySelector('.output-actions').style.display = 'flex';
             downloadResults.style.display = 'inline-block';
+
         } else if (event.data.includes('Analysis failed')) {
             outputEventSource.close();
             outputText.textContent += '\nAnalysis failed. Please check the output above for errors.\n';
             // Show new analysis button but not download button
             document.querySelector('.output-actions').style.display = 'flex';
             downloadResults.style.display = 'none';
+
+            if (poller) poller.stopPolling(); 
+            poller = false
         }
     };
     
@@ -342,6 +374,15 @@ async function downloadAnalysisResults() {
     }
 }
 
+function removeChildNodes(parent){
+    
+    if (parent){
+        while (parent.firstChild) {
+            parent.removeChild(parent.firstChild);
+        }
+    }
+}
+
 function resetUI() {
     // Clean up current session
     if (currentSession) {
@@ -357,7 +398,9 @@ function resetUI() {
     
     // Reset form
     analysisForm.reset();
-    
+    removeChildNodes(analysisContainer)
+    removeChildNodes(framesSection)
+
     // Reset UI
     uploadSection.style.display = 'block';
     configSection.style.display = 'none';
@@ -367,6 +410,189 @@ function resetUI() {
     
     // Reset client settings
     loadDefaultConfig();
+}
+
+function renderFrame(frameData, session_id) {
+
+    try{
+        const frameId = `frame-${frameData.frame.idx}`;
+    
+        let frameElement = document.getElementById(frameId);
+
+        // If the frame does not exist, create it
+        if (!frameElement) {
+            frameElement = document.createElement("div");
+            frameElement.id = frameId;
+            frameElement.className = "frame-container";
+            framesSection.appendChild(frameElement);
+        }
+
+        // Store raw_response for later use
+        let raw_response = frameData.response;
+        raw_response = raw_response.replace(/```/g, "").trim();
+        frameElement.setAttribute('data-raw-response', raw_response);
+
+        let response = raw_response
+
+        // look for prev raw_response 
+        const prev_el = frameElement.previousElementSibling 
+        if (prev_el){
+            const prev_raw_response = prev_el.getAttribute('data-raw-response')
+            if (prev_raw_response){
+                response = highlightDiff( prev_raw_response, raw_response);
+            }
+        }
+
+        frameElement.innerHTML = `
+            <h3>Key Frame ${frameData.frame.idx} : #${frameData.frame.num}</h3>
+
+            <div class="info-row">
+                <span class="left">${frameData.frame.timestamp.toFixed(2)}s</span>
+                <span class="right">Cost: $${frameData.token_usage.cost.toFixed(4)}</span>
+            </div>
+            <div class="info-row">
+                <span class="left"><strong>Score:</strong> ${frameData.frame.score.toFixed(2)}</span>
+                <span class="right">${frameData.token_usage.total_tokens} tokens</span>
+            </div>
+
+            <img src="/serve_file/${session_id}/${frameData.frame.name}" 
+                    alt="Frame ${frameData.frame.num}" 
+                    class="frame-image" 
+                    loading="lazy">
+            <div class="frame-description">${response}</div>
+        `;
+    }
+    catch( error ){
+        console.warn( 'renderFrame', error , frameData)
+    }
+}
+
+function renderVideoAnalysis(analysisData, session_id) {
+    
+    if (analysisContainer) {
+
+        // Extract data
+        const { total_tokens, total_cost } = analysisData.token_usage;
+
+        // Remove code block markers from response text
+        let response = analysisData.video_description.response;
+        response = response.replace(/```/g, "").trim();
+
+        // Create HTML structure
+        analysisContainer.innerHTML = `
+            <div class="analysis-content">
+                <h2>Video Analysis</h2>
+                <p><strong>Total Tokens Used:</strong> ${total_tokens}</p>
+                <p><strong>Total Cost:</strong> $${total_cost.toFixed(3)}</p>
+                <br>
+                <div class="video-description">${response}</div>
+            </div>
+        `;
+    }
+    else{
+        console.warn("Element analysisContainer not found.");
+    }
+    // Re-render all the frames(!)
+    for (const frameData of analysisData.frame_analyses) {
+        renderFrame( frameData, session_id)
+    }
+}
+
+function highlightDiff(oldText, newText) {
+
+    let result = '';
+
+    try {
+        let diff = Diff.diffWords(oldText, newText);
+
+        diff.forEach(part => {
+            const value = part.value.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+            if (part.added){
+                result += `<span style="text-decoration: underline green 2px"> ${value}</span>`;
+            }
+            else 
+            if (part.removed){
+                result += `<span style="text-decoration: line-through red 2px"> ${value}</span>`;
+            }
+            else{
+                result += value;
+            }
+        });
+ 
+    } catch (error) {
+        console.warn("Diff library might not be loaded or an error occurred:", error);
+        result = newText;
+    }
+
+    return result;
+}
+
+function createPollingProcess(session_id, interval = 1000) {
+    let ix = 0;
+    let polling = null;
+
+    async function checkFile(filePath) {
+        console.log(`[DEBUG] Checking file: ${filePath}`);
+        try {
+            const response = await fetch(filePath);
+            if (!response.ok) throw new Error(`[DEBUG] File not found: ${filePath}`);
+            const jsonData = await response.json();
+            console.log(`[DEBUG] Successfully read: ${filePath}`);
+            return jsonData;
+        } catch (error) {
+            console.log(`[DEBUG] Error reading file: ${filePath} - ${error.message}`);
+            return null; // File not found or fetch failed
+        }
+    }
+
+    async function poll() {
+        console.log(`[DEBUG] Polling started for session: ${session_id}`);
+
+        const analysisFile = `/serve_file/${session_id}/analysis.json`;
+        console.log(`[DEBUG] Checking for analysis file: ${analysisFile}`);
+
+        const analysisData = await checkFile(analysisFile);
+        if (analysisData) {
+            console.log(`[SUCCESS] Analysis file found:`, analysisData);
+            renderVideoAnalysis(analysisData, session_id)
+            stopPolling();
+            return;
+        }
+
+        const frameFile = `/serve_file/${session_id}/frame_${ix}.json`;
+        console.log(`[DEBUG] Checking for frame file: ${frameFile}`);
+
+        const frameData = await checkFile(frameFile);
+        if (frameData) {
+            console.log(`[SUCCESS] Frame ${ix} found:`, frameData);
+            renderFrame(frameData, session_id)
+            ix++; // Move to next frame
+        } else {
+            console.log(`[DEBUG] Frame ${ix} not available yet. Retrying...`);
+        }
+    }
+
+    function startPolling() {
+        if (!polling) {
+            console.log(`[DEBUG] Starting polling every ${interval}ms...`);
+            polling = setInterval(poll, interval);
+        } else {
+            console.log(`[DEBUG] Polling is already running.`);
+        }
+    }
+
+    function stopPolling() {
+        if (polling) {
+            clearInterval(polling);
+            polling = null;
+            console.log(`[DEBUG] Polling stopped.`);
+        } else {
+            console.log(`[DEBUG] Polling was not running.`);
+        }
+    }
+
+    return { startPolling, stopPolling };
 }
 
 // Initialize UI

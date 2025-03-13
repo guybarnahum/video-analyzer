@@ -46,6 +46,6 @@
         "language": "en",
         "device": "cpu"
     },
-    "keep_frames": false,
+    "keep_frames": true,
     "prompt": ""
 }

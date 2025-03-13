@@ -39,7 +39,7 @@ def get_log_level(level_str: str) -> int:
 def cleanup_files(output_dir: Path):
     """Clean up temporary files and directories."""
     try:
-        frames_dir = output_dir / "frames"
+        frames_dir = output_dir
         if frames_dir.exists():
             shutil.rmtree(frames_dir)
             logger.debug(f"Cleaned up frames directory: {frames_dir}")
@@ -157,9 +157,10 @@ def main():
             
             logger.info(f"Extracting frames from video using model {model}...")
 
+            output_frames_dir = output_dir
             processor = VideoProcessor(
                 video_path, 
-                output_dir / "frames", 
+                output_frames_dir, 
                 model
             )
             
@@ -182,6 +183,14 @@ def main():
             for frame in frames:
                 analysis = analyzer.analyze_frame(frame)
                 frame_analyses.append(analysis)
+
+                output_frame_path = output_frames_dir / frame['name']
+                output_frame_json = output_frame_path.with_suffix(".json")
+                logging.info(f'frame json >> {output_frame_json}')
+                
+                with open(output_frame_json, "w") as f:
+                    json.dump(analysis, f, indent=2)
+
                 if 'token_usage' in analysis:
                     token_usage['total_tokens'] += analysis['token_usage']['total_tokens']
                     token_usage['total_cost'  ] += analysis['token_usage']['cost'  ]

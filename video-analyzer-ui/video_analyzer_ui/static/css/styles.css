@@ -81,40 +81,38 @@ section {
     margin-top: 0.5rem;
 }
 
-/* Form Styling */
-.form-group {
-    margin-bottom: 1.5rem;
-}
-
-label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-}
-
-label::after {
-    content: " *";
-    color: var(--danger-color);
-    display: none;
-}
-
-label.required::after {
-    display: inline;
-}
-
-input[type="text"],
-input[type="password"],
-input[type="number"],
-select,
-textarea {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 1rem;
-    transition: border-color 0.3s ease;
-}
-
+/* Compact Form Layout */
+#analysisForm {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  
+  /* Make each form group more compact */
+  .form-group {
+    display: flex;
+    align-items: center;
+  }
+  
+  /* Adjust label width and position */
+  .form-group label {
+    width: 5rem;
+    height: 1rem;
+    font-size: 0.8rem;
+    margin-right: 0.25rem;
+    flex-shrink: 0;
+  }
+  
+  /* Adjust input sizing */
+  .form-group input[type="text"],
+  .form-group input[type="password"],
+  .form-group input[type="number"],
+  .form-group select {
+    padding: 0.25rem;
+    flex-grow: 1;
+    font-size: 0.8rem;
+  }
+  
 input:focus,
 select:focus,
 textarea:focus {
@@ -123,27 +121,33 @@ textarea:focus {
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
-textarea {
-    min-height: 100px;
+  /* Special handling for textarea */
+  .form-group:has(textarea) {
+    grid-column: span 3;
+  }
+  
+  textarea {
+    width: 100%;
+    min-height: 2rem;
+    padding: 0.5rem;
     resize: vertical;
-}
-
-.checkbox {
+  }
+  
+  /* Checkbox adjustment */
+  .checkbox {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-}
-
-.checkbox input {
+  }
+  
+  .checkbox label {
     width: auto;
-}
-
-.checkbox label {
-    margin: 0;
-}
-
-/* Command Preview */
+    margin-left: 0.25rem;
+  }
+  
+  /* Command Preview */
 .command-preview {
+    width: 100%;
+    grid-column: span 3;
     background: #f8f9fa;
     border-radius: 4px;
     padding: 1rem;
@@ -154,10 +158,191 @@ textarea {
     white-space: pre-wrap;
     word-break: break-all;
     font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-    font-size: 0.875rem;
+    font-size: 0.8rem;
 }
 
+  /* Make form actions span full width */
+  .form-actions {
+    grid-column: span 3;
+    text-align: right;
+    margin-top: 0.5rem;
+  }
+  
+  /* Make client-specific settings span full width */
+  #ollamaSettings, #openaiSettings {
+    grid-column: span 2;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    #analysisForm,
+    #ollamaSettings,
+    #openaiSettings {
+      grid-template-columns: 1fr;
+    }
+    
+    .form-group:has(textarea) {
+      grid-column: span 1;
+    }
+    
+    .command-preview,
+    .form-actions {
+      grid-column: span 1;
+    }
+  }
+  
+/* Output Section */
+.output-container {
+    background: #f8f9fa;
+    border-radius: 4px;
+    padding: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+    position: relative;
+}
+
+/* Video Section */
+.video-section {
+    display: flex; /* Enables flexbox */
+    justify-content: center; /* Centers horizontally */
+    align-items: center; /* Centers vertically */
+    height: 50vh; /* Makes section take full viewport height */
+    background-color: #000; /* Optional: adds a black background for contrast */
+}
+
+video {
+    max-width: 100%; /* Ensures responsiveness */
+    height: auto; /* Keeps aspect ratio */
+    border-radius: 10px; /* Optional: adds rounded corners */
+    box-shadow: 0 4px 10px rgba(255, 255, 255, 0.3); /* Soft glow effect */
+}
+
+/* Frames Section */
+.frames-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px; /* Space between frames */
+    justify-content: center ; /*flex-start; Align frames to the left */
+    align-items: flex-start;
+    padding: 10px;
+}
+
+.frame-container {
+   
+    align-items: center;
+    width: 300px; /* Adjust as needed */
+    padding: 10px;
+    margin: 10px;
+    border-radius: 12px;
+    background-color: #f8f9fa;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.frame-container h3 {
+    margin: 5px 0;
+    font-size: 1.2em;
+    color: #333;
+}
+
+.frame-container p {
+    margin: 2px 0;
+    font-size: 0.9em;
+    color: #666;
+    text-align: left;
+}
+
+.frame-image {
+    max-width: 90%; /* Makes the image smaller */
+    height: auto;
+    border-radius: 10px; /* Rounded corners */
+    margin-top: 5px;
+}
+
+.frame-description {
+    padding: 5px;
+    font-size: 0.9em;
+    color: #444;
+    white-space: pre-wrap;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.left {
+    text-align: left;
+}
+
+.right {
+    text-align: right;
+}
+
+/* video analysis content */
+.analysis-content {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    margin: 0 auto;
+  }
+  
+  .analysis-content h2 {
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
+  }
+  
+  .analysis-content p {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: #34495e;
+  }
+  
+  .analysis-content strong {
+    color: #2c3e50;
+    font-weight: 600;
+  }
+  
+  .video-description {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: white;
+    border-left: 4px solid #3498db;
+    border-radius: 0 4px 4px 0;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+  
+  /* Add this for cost highlighting */
+  .analysis-content p:nth-child(3) strong {
+    color: #e74c3c;
+  }
+  
+  /* Add this for responsive design */
+  @media (max-width: 600px) {
+    .analysis-content {
+      padding: 1rem;
+    }
+    
+    .analysis-content h2 {
+      font-size: 1.5rem;
+    }
+    
+    .analysis-content p {
+      font-size: 1rem;
+    }
+ }
+
 /* Buttons */
+
 button {
     padding: 0.75rem 1.5rem;
     border: none;
@@ -177,25 +362,11 @@ button {
     background-color: var(--primary-hover);
 }
 
-.secondary-button {
-    background-color: var(--secondary-color);
-    color: white;
-}
-
 .secondary-button:hover {
     background-color: #5a6268;
 }
 
-/* Output Section */
-.output-container {
-    background: #f8f9fa;
-    border-radius: 4px;
-    padding: 1rem;
-    max-height: 400px;
-    overflow-y: auto;
-    position: relative;
-}
-
+/* Loading */
 .loading {
     position: absolute;
     top: 50%;
@@ -229,7 +400,7 @@ button {
 
 .output-container pre {
     font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-    font-size: 0.875rem;
+    font-size: 0.5rem;
     white-space: pre-wrap;
     word-break: break-word;
 }

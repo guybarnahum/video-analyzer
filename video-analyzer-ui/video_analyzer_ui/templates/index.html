@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Analyzer</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/diff@5.1.0/dist/diff.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -24,16 +25,32 @@
                         <p>Drag & drop video or click to upload</p>
                         <p class="upload-formats">Supported formats: MP4, AVI, MOV, MKV</p>
                     </div>
+                    <div class="upload-recents">
+                    </div>
                 </div>
             </section>
-
+            <!-- Video Section --> 
+            <section class="video-section" id="videoSection">
+                <video id="videoPlayer" width="640" height="360" controls>
+                    <source src="" type="video/mp4">
+                    Browser does not support the video tag.
+                </video>
+            </section>
+            <!-- Video Summary Section -->
+            <section class="video-summary-section" id="videoSummarySection">
+                <div id="video-summary-analysis" class="video-summary-analysis">
+                </div>
+            </section>
+            <!-- Frames Section --> 
+            <section class="frames-section" id="framesSection">
+            </section>
             <!-- Configuration Section -->
             <section class="config-section" id="configSection" style="display: none;">
-                <h2>Analysis Configuration</h2>
+                <h2>Configuration</h2>
                 <form id="analysisForm">
                     <!-- Client Configuration -->
                     <div class="form-group">
-                        <label for="client">Client:</label>
+                        <label for="client">LLM</label>
                         <select id="client" name="client">
                             <option value="ollama">Ollama (Local)</option>
                             <option value="openai_api">OpenAI API</option>
@@ -43,43 +60,43 @@
                     <!-- Client-specific settings -->
                     <div id="ollamaSettings">
                         <div class="form-group">
-                            <label for="ollama-url">Ollama URL:</label>
+                            <label for="ollama-url">Ollama URL</label>
                             <input type="text" id="ollama-url" name="ollama.ollama-url" value="http://localhost:11434">
                         </div>
                         <div class="form-group">
-                            <label for="ollama-model">Vision Model:</label>
+                            <label for="ollama-model">Model</label>
                             <input type="text" id="ollama-model" name="ollama.model" placeholder="llama3.2-vision">
                         </div>
                     </div>
 
                     <div id="openaiSettings" style="display: none;">
                         <div class="form-group">
-                            <label for="api-key">API Key: *</label>
+                            <label for="api-key">API Key</label>
                             <input type="password" id="api-key" name="openai_api.api-key">
                         </div>
                         <div class="form-group">
-                            <label for="api-url">API URL: *</label>
+                            <label for="api-url">API URL</label>
                             <input type="text" id="api-url" name="openai_api.api-url" placeholder="https://api.openai.com/v1">
                         </div>
                         <div class="form-group">
-                            <label for="api-model">Vision Model:</label>
+                            <label for="api-model">Model</label>
                             <input type="text" id="api-model" name="openai_api.model" placeholder="gpt-4o">
                         </div>
                     </div>
 
                     <!-- Processing Options -->
                     <div class="form-group">
-                        <label for="duration">Duration (seconds):</label>
+                        <label for="duration">Duration (sec)</label>
                         <input type="number" id="duration" name="duration" min="1">
                     </div>
 
                     <div class="form-group">
-                        <label for="max-frames">Max Frames:</label>
+                        <label for="max-frames">Max Frames</label>
                         <input type="number" id="max-frames" name="max-frames" min="1">
                     </div>
 
                     <div class="form-group">
-                        <label for="whisper-model">Whisper Model:</label>
+                        <label for="whisper-model">Whisper</label>
                         <select id="whisper-model" name="whisper-model">
                             <option value="none" selected>None</option>
                             <option value="tiny">Tiny</option>
@@ -91,12 +108,12 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="language">Language:</label>
+                        <label for="language">Language</label>
                         <input type="text" id="language" name="language" placeholder="Auto-detect">
                     </div>
 
                     <div class="form-group">
-                        <label for="device">Device:</label>
+                        <label for="device">Device</label>
                         <select id="device" name="device">
                             <option value="cpu">CPU</option>
                             <option value="cuda">CUDA (GPU)</option>
@@ -104,14 +121,14 @@
                         </select>
                     </div>
 
-                    <div class="form-group">
-                        <label for="prompt">Analysis Prompt:</label>
-                        <textarea id="prompt" name="prompt" placeholder="What would you like to know about the video?"></textarea>
+                    <div class="form-group checkbox">
+                        <input type="checkbox" id="keep-frames" name="keep-frames" checked>
+                        <label for="keep-frames">Keep Extracted Frames</label>
                     </div>
 
-                    <div class="form-group checkbox">
-                        <input type="checkbox" id="keep-frames" name="keep-frames">
-                        <label for="keep-frames">Keep Extracted Frames</label>
+                    <div class="form-group">
+                        <label for="prompt">Prompt</label>
+                        <textarea id="prompt" name="prompt" placeholder="What would you like to know about the video?"></textarea>
                     </div>
 
                     <!-- Command Preview -->
@@ -128,7 +145,7 @@
 
             <!-- Output Section -->
             <section class="output-section" id="outputSection" style="display: none;">
-                <h2>Analysis Output</h2>
+                <h2>Analyzer Logs</h2>
                 <div class="output-container">
                     <pre id="outputText"></pre>
                 </div>
