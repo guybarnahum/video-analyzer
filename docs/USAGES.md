@@ -93,7 +93,7 @@ The tool uses a cascading configuration system with the following priority:
     "language_confidence_threshold": 0.5,
     "language": null
   },
-  "keep_frames": false,
+  "keep_frames": true,
   "prompt": ""
 }
 ```
