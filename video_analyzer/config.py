@@ -60,22 +60,20 @@ class Config:
 
     def update_from_args(self, args: argparse.Namespace):
         """Update configuration with command-line arguments."""
+        client = None
+
         for key, value in vars(args).items():
             if value is not None:  # Only update if argument was provided
                 if key == "output":
                     self.config["output_dir"] = value  # Ensure the config reflects this update
                 elif key == "client":
+                    client = value
                     self.config["clients"]["default"] = value
-                elif key == "ollama_url":
-                    self.config["clients"]["ollama"]["url"] = value
                 elif key == "api_key":
-                    self.config["clients"]["openai_api"]["api_key"] = value
-                    if not args.client:
-                        self.config["clients"]["default"] = "openai_api"
+                    self.config["clients"][client]["api_key"] = value
                 elif key == "api_url":
-                    self.config["clients"]["openai_api"]["api_url"] = value
+                    self.config["clients"][client]["api_url"] = value
                 elif key == "model":
-                    client = self.config["clients"]["default"]
                     self.config["clients"][client]["model"] = value
                 elif key == "prompt":
                     self.config["prompt"] = value
@@ -89,7 +87,6 @@ class Config:
                 elif key not in ["start_stage", "max_frames"]:  # Ignore these as they're command-line only
                     self.config[key] = value
 
-
     def save_user_config(self):
         """Save current configuration to user config file."""
         try:
@@ -101,29 +98,29 @@ class Config:
             logger.error(f"Error saving user config: {e}")
             raise
 
-def get_client(config: Config) -> dict:
+def get_client(config: Config, client_type: str) -> dict:
     """Get the appropriate client configuration based on configuration."""
-    client_type = config.get("clients", {}).get("default", "ollama")
-    client_config = config.get("clients", {}).get(client_type, {})
     
-    if client_type == "ollama":
-        return {"url": client_config.get("url", "http://localhost:11434")}
-    elif client_type == "openai_api":
+    if client_type not in ['ollama','openai_api','google_api']:
+        raise ValueError(f"Invalid client type : {client_type}")
+
+    try:
+        client_config = config.get("clients", {}).get(client_type, {})
         api_key = client_config.get("api_key")
         api_url = client_config.get("api_url")
-        if not api_key:
-            raise ValueError("API key is required when using OpenAI API client")
-        if not api_url:
-            raise ValueError("API URL is required when using OpenAI API client")
-        return {
-            "api_key": api_key,
-            "api_url": api_url
-        }
-    else:
-        raise ValueError(f"Unknown client type: {client_type}")
+        model   = client_config.get("model")
 
-def get_model(config: Config) -> str:
-    """Get the appropriate model based on client type and configuration."""
-    client_type = config.get("clients", {}).get("default", "ollama")
-    client_config = config.get("clients", {}).get(client_type, {})
-    return client_config.get("model", "llama3.2-vision")
+    except Exception as e:
+        logger.error(f'get_client - Error : {str(e)}')
+
+    if not api_key and client_type not in [ 'ollama' ]:
+        raise ValueError(f"api_key is required for {client_type} client")
+
+    if not api_url:
+        raise ValueError(f"api_url is required for {client_type} client")
+    
+    return {
+        "api_key": api_key,
+        "api_url": api_url,
+        "model"  : model
+    }

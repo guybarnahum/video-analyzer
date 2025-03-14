@@ -86,32 +86,32 @@ section {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
-  }
+}
   
-  /* Make each form group more compact */
-  .form-group {
+/* Make each form group more compact */
+.form-group {
     display: flex;
     align-items: center;
-  }
+}
   
-  /* Adjust label width and position */
-  .form-group label {
+/* Adjust label width and position */
+.form-group label {
     width: 5rem;
     height: 1rem;
     font-size: 0.8rem;
     margin-right: 0.25rem;
     flex-shrink: 0;
-  }
+}
   
-  /* Adjust input sizing */
-  .form-group input[type="text"],
-  .form-group input[type="password"],
-  .form-group input[type="number"],
-  .form-group select {
+/* Adjust input sizing */
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="number"],
+.form-group select {
     padding: 0.25rem;
     flex-grow: 1;
     font-size: 0.8rem;
-  }
+}
   
 input:focus,
 select:focus,
@@ -121,30 +121,30 @@ textarea:focus {
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
-  /* Special handling for textarea */
-  .form-group:has(textarea) {
+/* Special handling for textarea */
+.form-group:has(textarea) {
     grid-column: span 3;
-  }
-  
-  textarea {
+}
+
+textarea {
     width: 100%;
     min-height: 2rem;
     padding: 0.5rem;
     resize: vertical;
-  }
-  
-  /* Checkbox adjustment */
-  .checkbox {
+}
+
+/* Checkbox adjustment */
+.checkbox {
     display: flex;
     align-items: center;
-  }
-  
-  .checkbox label {
+}
+
+.checkbox label {
     width: auto;
     margin-left: 0.25rem;
-  }
+}
   
-  /* Command Preview */
+/* Command Preview */
 .command-preview {
     width: 100%;
     grid-column: span 3;
@@ -161,38 +161,44 @@ textarea:focus {
     font-size: 0.8rem;
 }
 
-  /* Make form actions span full width */
-  .form-actions {
+/* Make form actions span full width */
+.form-actions {
     grid-column: span 3;
     text-align: right;
     margin-top: 0.5rem;
-  }
-  
-  /* Make client-specific settings span full width */
-  #ollamaSettings, #openaiSettings {
+}
+
+/* Client-specific settings */
+.client-settings {
+    border-left: 3px solid var(--primary-color);
+    padding-left: 1rem;
+    margin: 1rem 0;
+}
+
+/* Make client-specific settings span full width */
+.client-settings{
     grid-column: span 2;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
-  }
+}
   
   /* Responsive adjustments */
-  @media (max-width: 768px) {
-    #analysisForm,
-    #ollamaSettings,
-    #openaiSettings {
-      grid-template-columns: 1fr;
-    }
-    
-    .form-group:has(textarea) {
-      grid-column: span 1;
-    }
-    
-    .command-preview,
-    .form-actions {
-      grid-column: span 1;
-    }
-  }
+@media (max-width: 768px) {
+#analysisForm,
+.client-settings {
+    grid-template-columns: 1fr;
+}
+
+.form-group:has(textarea) {
+    grid-column: span 1;
+}
+
+.command-preview,
+.form-actions {
+    grid-column: span 1;
+}
+}
   
 /* Output Section */
 .output-container {
@@ -283,7 +289,23 @@ video {
     text-align: right;
 }
 
-/* video analysis content */
+.text-added {
+    text-decoration: underline green 2px;
+}
+
+.text-removed {
+    text-decoration: line-through red 2px;
+    display: none;
+    /* visibility: hidden; */
+}
+
+.frame-container:hover .text-removed {
+    display: inline;
+    /* visibility: visible; */
+}
+
+
+/* Video Analysis Content */
 .analysis-content {
     background-color: #f8f9fa;
     border-radius: 8px;
@@ -320,6 +342,7 @@ video {
     line-height: 1.6;
     white-space: pre-wrap;
   }
+  
   
   /* Add this for cost highlighting */
   .analysis-content p:nth-child(3) strong {
@@ -435,10 +458,3 @@ button {
     }
 }
 
-/* Client-specific settings */
-#ollamaSettings,
-#openaiSettings {
-    border-left: 3px solid var(--primary-color);
-    padding-left: 1rem;
-    margin: 1rem 0;
-}

@@ -2,13 +2,19 @@
     "clients": {
         "default": "openai_api",
         "ollama": {
-            "url": "http://localhost:11434",
-            "model": "llama3.2-vision"
+            "api_url"   : "http://localhost:11434",
+            "api_key"   : false,
+            "model"     : "llama3.2-vision"
         },
         "openai_api": {
-            "api_key": "<openai_api_key>",
-            "model": "gpt-4o",
-            "api_url": "https://api.openai.com/v1"
+            "api_url"   : "https://api.openai.com/v1",
+            "api_key"   : "<openai_api_key>",
+            "model"     : "gpt-4o"
+        },
+        "google_api": {
+            "api_url"   : "https://generativelanguage.googleapis.com/v1beta/",
+            "api_key"   : "<google_api_key>",
+            "model"     : "gemini-2.0-flash"
         }
     },
     "prompt_dir": "prompts",

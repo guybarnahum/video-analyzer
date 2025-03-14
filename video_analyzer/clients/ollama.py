@@ -1,10 +1,11 @@
 import requests
 import json
 from typing import Optional, Dict, Any
-from .llm_client import LLMClient
+from .llm_client import LLMClient, TOKEN_PRICING
 
 class OllamaClient(LLMClient):
-    def __init__(self, base_url: str = "http://localhost:11434"):
+    def __init__(self, config):
+        base_url = config['api_url']
         self.base_url = base_url.rstrip('/')
         self.generate_url = f"{self.base_url}/api/generate"
 
@@ -37,7 +38,16 @@ class OllamaClient(LLMClient):
             if stream:
                 return self._handle_streaming_response(response)
             else:
-                return response.json()
+                return {
+                        "response": response.json(),
+                        "token_usage": {
+                            "prompt_tokens": 0,
+                            "completion_tokens": 0,
+                            "total_tokens": 0,
+                            "model_pricing": false,
+                            "cost": 0
+                        }
+                    }
                 
         except requests.exceptions.RequestException as e:
             raise Exception(f"API request failed: {str(e)}")
@@ -55,4 +65,13 @@ class OllamaClient(LLMClient):
                 except json.JSONDecodeError:
                     continue
                     
-        return {"response": accumulated_response}
+        return {
+                "response": accumulated_response,
+                "token_usage": {
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                    "total_tokens": 0,
+                    "model_pricing": false,
+                    "cost": 0
+                }
+            }

@@ -14,13 +14,14 @@ import cProfile
 import pstats
 import io
 
-from .config import Config, get_client, get_model
+from .config import Config, get_client
 from .frame import VideoProcessor
 from .prompt import PromptLoader
 from .analyzer import VideoAnalyzer
 from .audio_processor import AudioProcessor, AudioTranscript
 from .clients.ollama import OllamaClient
 from .clients.generic_openai_api import GenericOpenAIAPIClient
+from .clients.google_api import GoogleAPIClient
 
 # Initialize logger at module level
 logger = logging.getLogger(__name__)
@@ -48,18 +49,25 @@ def cleanup_files(output_dir: Path):
         if audio_file.exists():
             audio_file.unlink()
             logger.debug(f"Cleaned up audio file: {audio_file}")
+   
     except Exception as e:
         logger.error(f"Error during cleanup: {e}")
 
-def create_client(config: Config):
+def get_client_config(config: Config, client_type = None):
+    if not client_type:
+        client_type = config.get("clients", {}).get("default", "openai_api")
+     
+    client_config = get_client(config, client_type)
+    return client_type, client_config
+
+def create_client(client_type, client_config):
     """Create the appropriate client based on configuration."""
-    client_type = config.get("clients", {}).get("default", "ollama")
-    client_config = get_client(config)
-    
     if client_type == "ollama":
-        return OllamaClient(client_config["url"])
+        return OllamaClient(client_config)
     elif client_type == "openai_api":
-        return GenericOpenAIAPIClient(client_config["api_key"], client_config["api_url"])
+        return GenericOpenAIAPIClient(client_config)
+    elif client_type == "google_api":
+        return GoogleAPIClient(client_config)
     else:
         raise ValueError(f"Unknown client type: {client_type}")
 
@@ -70,7 +78,6 @@ def main():
                         help="Path to configuration directory")
     parser.add_argument("--output", type=str, help="Output directory for analysis results")
     parser.add_argument("--client", type=str, help="Client to use (ollama or openrouter or openai_api)")
-    parser.add_argument("--ollama-url", type=str, help="URL for the Ollama service")
     parser.add_argument("--api-key", type=str, help="API key for OpenAI-compatible service")
     parser.add_argument("--api-url", type=str, help="API URL for OpenAI-compatible API")
     parser.add_argument("--model", type=str, help="Name of the vision model to use")
@@ -114,8 +121,14 @@ def main():
 
     output_dir_str = config.get("output_dir")
     output_dir = Path(output_dir_str)
-    client = create_client(config)
-    model = get_model(config)
+
+    client_type, client_config = get_client_config(config)
+    client = create_client(client_type, client_config)
+    
+    logger.info(f'client type : {client_type}, config : {client_config} ')
+
+    model = client_config['model']
+   
     prompt_loader = PromptLoader(config.get("prompt_dir"), config.get("prompts", []))
     
     try:

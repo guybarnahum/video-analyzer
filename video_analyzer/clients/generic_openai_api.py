@@ -3,17 +3,11 @@ import json
 import time
 import re
 from typing import Optional, Dict, Any, Tuple
-from .llm_client import LLMClient
+from .llm_client import LLMClient, TOKEN_PRICING
 import logging
 from pprint import pformat
 
 logger = logging.getLogger(__name__)
-
-TOKEN_PRICING = {
-    "llama3.2-vision": {"prompt": 0.005, "completion": 0.015},  # Example values (per 1K tokens)
-    "gpt-4-turbo": {"prompt": 0.01, "completion": 0.03},
-    "gpt-4o": {"prompt": 0.0025, "completion": 0.01},  # GPT-4o pricing (per 1K tokens)
-}
 
 # Constants
 DEFAULT_MAX_RETRIES = 3
@@ -21,8 +15,9 @@ RATE_LIMIT_WAIT_TIME = 25  # seconds
 DEFAULT_WAIT_TIME = 25  # seconds
 
 class GenericOpenAIAPIClient(LLMClient):
-    def __init__(self, api_key: str, api_url: str, max_retries: int = DEFAULT_MAX_RETRIES):
-        self.api_key = api_key
+    def __init__(self, config, max_retries: int = DEFAULT_MAX_RETRIES):
+        self.api_key = config['api_key']
+        api_url = config['api_url']
         self.base_url = api_url.rstrip('/')  # Remove trailing slash if present
         self.generate_url = f"{self.base_url}/chat/completions"
         self.max_retries = max_retries
@@ -62,7 +57,7 @@ class GenericOpenAIAPIClient(LLMClient):
         # Prepare headers
         headers = {
             "Authorization": f"Bearer {self.api_key}",
-            "HTTP-Referer": "https://github.com/byjlw/video-analyzer",
+            "HTTP-Referer": "https://github.com/guybarnahum/video-analyzer",
             "X-Title": "Video Analyzer",
             "Content-Type": "application/json"
         }

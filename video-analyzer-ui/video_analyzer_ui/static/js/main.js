@@ -21,6 +21,7 @@ const newAnalysis = document.getElementById('newAnalysis');
 const clientSelect = document.getElementById('client');
 const ollamaSettings = document.getElementById('ollamaSettings');
 const openaiSettings = document.getElementById('openaiSettings');
+const googleSettings = document.getElementById('googleSettings');
 
 // Event Listeners
 dropZone.addEventListener('click', () => fileInput.click());
@@ -64,19 +65,33 @@ function loadDefaultConfig() {
         });
 }
 
+const clientSettings = {
+    "ollama"    : ollamaSettings, 
+    "openai_api": openaiSettings, 
+    "google_api": googleSettings 
+};
+
 function initializeFormFromConfig(config) {
     // Clear existing form values first
     analysisForm.reset();
     
-    // ollama
-    document.getElementById('ollama-url').value   = config.clients.ollama.url
-    document.getElementById('ollama-model').value = config.clients.ollama.model
+    for (var [client_type, client_config] of Object.entries(config.clients)) {
 
-    // openai
-    document.getElementById('api-key').value    = config.clients.openai_api.api_key
-    document.getElementById('api-url').value    = config.clients.openai_api.api_url
-    document.getElementById('api-model').value  = config.clients.openai_api.model
-   
+        if (client_type === 'default') continue;
+
+        var id = client_type +'-api-url'
+        var el = document.getElementById(id)
+        if (el) el.value = client_config.api_url
+
+        id = client_type +'-api-key'
+        el = document.getElementById(id)
+        if (el) el.value = client_config.api_key
+
+        id = client_type +'-model'
+        el = document.getElementById(id)
+        if (el) el.value = client_config.model
+    }
+
     // Set client type first as it affects which fields are visible
     if (config.clients.default) {
         clientSelect.value = config.clients.default;
@@ -313,16 +328,13 @@ function showOutputSection() {
 }
 
 function toggleClientSettings() {
-    const client = clientSelect.value;
+    const client_selected = clientSelect.value;
     
-    if (client === 'ollama') {
-        ollamaSettings.style.display = 'block';
-        openaiSettings.style.display = 'none';
-        
-    } else {
-        ollamaSettings.style.display = 'none';
-        openaiSettings.style.display = 'block';
+    // Iterate over key-value pairs
+    for (const [client_type, client_settings] of Object.entries(clientSettings)) {
+        client_settings.style.display = (client_type == client_selected)? "block" : "none";
     }
+
     updateCommandPreview();
 }
 
@@ -448,11 +460,11 @@ function renderFrame(frameData, session_id) {
 
             <div class="info-row">
                 <span class="left">${frameData.frame.timestamp.toFixed(2)}s</span>
-                <span class="right">Cost: $${frameData.token_usage.cost.toFixed(4)}</span>
+                <span class="right">Cost: $${frameData.token_usage.cost.toFixed(4).toLocaleString()}</span>
             </div>
             <div class="info-row">
                 <span class="left"><strong>Score:</strong> ${frameData.frame.score.toFixed(2)}</span>
-                <span class="right">${frameData.token_usage.total_tokens} tokens</span>
+                <span class="right">${frameData.token_usage.total_tokens.toLocaleString()} tokens</span>
             </div>
 
             <img src="/serve_file/${session_id}/${frameData.frame.name}" 
@@ -482,8 +494,8 @@ function renderVideoAnalysis(analysisData, session_id) {
         analysisContainer.innerHTML = `
             <div class="analysis-content">
                 <h2>Video Analysis</h2>
-                <p><strong>Total Tokens Used:</strong> ${total_tokens}</p>
-                <p><strong>Total Cost:</strong> $${total_cost.toFixed(3)}</p>
+                <p><strong>Total Tokens Used:</strong> ${total_tokens.toLocaleString()}</p>
+                <p><strong>Total Cost:</strong> $${total_cost.toFixed(3).toLocaleString()}</p>
                 <br>
                 <div class="video-description">${response}</div>
             </div>
@@ -509,11 +521,11 @@ function highlightDiff(oldText, newText) {
             const value = part.value.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
             if (part.added){
-                result += `<span style="text-decoration: underline green 2px"> ${value}</span>`;
+                result += `<span class='text-added'> ${value}</span>`;
             }
             else 
             if (part.removed){
-                result += `<span style="text-decoration: line-through red 2px"> ${value}</span>`;
+                result += `<span class='text-removed'> ${value}</span>`;
             }
             else{
                 result += value;
