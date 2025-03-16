@@ -227,6 +227,7 @@ video {
 }
 
 /* Frames Section */
+
 .frames-section {
     display: flex;
     flex-wrap: wrap;
@@ -237,7 +238,11 @@ video {
 }
 
 .frame-container {
-   
+    
+    position: relative; /* Ensures child positioning */
+    overflow: visible;  /* Prevents clipping */
+    display: inline-block; /* Prevents unwanted stretching */
+
     align-items: center;
     width: 300px; /* Adjust as needed */
     padding: 10px;
@@ -245,7 +250,6 @@ video {
     border-radius: 12px;
     background-color: #f8f9fa;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
 }
 
 .frame-container h3 {
@@ -266,6 +270,17 @@ video {
     height: auto;
     border-radius: 10px; /* Rounded corners */
     margin-top: 5px;
+}
+
+.frame-container img {
+    transition: transform 0.3s ease-in-out;
+    transform-origin: center; /* Ensures scaling is centered */
+}
+  
+.frame-container img:hover {
+    transform: scale(3); /* Increases the size by 20% */
+    position: absolute;
+    z-index: 10; /* Ensures it appears above other content */
 }
 
 .frame-description {
@@ -299,7 +314,7 @@ video {
     /* visibility: hidden; */
 }
 
-.frame-container:hover .text-removed {
+.frame-description:hover .text-removed {
     display: inline;
     /* visibility: visible; */
 }
@@ -343,7 +358,7 @@ video {
     white-space: pre-wrap;
   }
   
-  
+
   /* Add this for cost highlighting */
   .analysis-content p:nth-child(3) strong {
     color: #e74c3c;
@@ -433,6 +448,21 @@ button {
     gap: 1rem;
     margin-top: 1rem;
 }
+
+/* API key masking */
+
+.api-key {
+    font-family: monospace; /* Use a monospaced font for better alignment */
+    position: relative; /* Position relative to contain the mask */
+}
+.api-key.masked::after {
+    content: attr(data-mask); /* Use the data-mask attribute for asterisks */
+    color: black; /* Set the color of the asterisks */
+    position: absolute; /* Position absolute to overlay the text */
+    left: 0; /* Align left */
+    background-color: white; /* Optional: hide the original text */
+}
+
 
 /* Responsive Design */
 @media (max-width: 768px) {

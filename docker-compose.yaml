@@ -11,7 +11,7 @@ services:
       - PIP_CACHE_DIR=/pip_cache
     ports:
       - "5000:5000"  # Ensure this line is here to map the container port to localhost
-    #command : ["bash"]
+    # command : [ "bash", "-c", "while true; do sleep 60; done" ] <-- enable to debug crashed video-analyzer
     command: ["video-analyzer-ui", "--dev", "--host", "0.0.0.0", "--port", "5000"]
 
 # Define named volumes

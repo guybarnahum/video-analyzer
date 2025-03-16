@@ -22,6 +22,7 @@ const clientSelect = document.getElementById('client');
 const ollamaSettings = document.getElementById('ollamaSettings');
 const openaiSettings = document.getElementById('openaiSettings');
 const googleSettings = document.getElementById('googleSettings');
+const mistralSettings = document.getElementById('mistralSettings');
 
 // Event Listeners
 dropZone.addEventListener('click', () => fileInput.click());
@@ -66,9 +67,10 @@ function loadDefaultConfig() {
 }
 
 const clientSettings = {
-    "ollama"    : ollamaSettings, 
-    "openai_api": openaiSettings, 
-    "google_api": googleSettings 
+    "ollama"        : ollamaSettings, 
+    "openai_api"    : openaiSettings, 
+    "google_api"    : googleSettings,
+    "mistral_api"   : mistralSettings,
 };
 
 function initializeFormFromConfig(config) {
@@ -371,11 +373,21 @@ async function downloadAnalysisResults() {
             throw new Error(data.error || 'Failed to fetch results');
         }
         
+        // Get filename from Content-Disposition header if available
+        let filename = `analysis_${currentSession}_df.zip`; // Default fallback
+        const contentDisposition = response.headers.get('Content-Disposition');
+        if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+            if (filenameMatch && filenameMatch[1]) {
+                filename = filenameMatch[1].replace(/['"]/g, '');
+            }
+        }
+        
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'analysis.json';
+        a.download = filename;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

@@ -55,6 +55,7 @@
                             <option value="ollama">Ollama (Local)</option>
                             <option value="openai_api">OpenAI API</option>
                             <option value="google_api">Gooogle Gemini API</option>
+                            <option value="mistral_api">Mistral AI API</option>
                         </select>
                     </div>
 
@@ -77,11 +78,11 @@
                         </div>
                         <div class="form-group">
                             <label for="openai_api-api-url">API URL</label>
-                            <input type="text" id="openai_api-api-url" name="openai_api.api-url" placeholder="https://api.openai.com/v1">
+                            <input type="text" id="openai_api-api-url" name="openai_api.api-url">
                         </div>
                         <div class="form-group">
                             <label for="openai_api-model">Model</label>
-                            <input type="text" id="openai_api-model" name="openai_api.model" placeholder="gpt-4o">
+                            <input type="text" id="openai_api-model" name="openai_api.model">
                         </div>
                     </div>
                     <div class="client-settings" id="googleSettings" style="display: none;">
@@ -91,11 +92,25 @@
                         </div>
                         <div class="form-group">
                             <label for="google_api-api-url">API URL</label>
-                            <input type="text" id="google_api-api-url" name="google_api.api-url" placeholder="https://api.openai.com/v1">
+                            <input type="text" id="google_api-api-url" name="google_api.api-url">
                         </div>
                         <div class="form-group">
                             <label for="google_api-model">Model</label>
                             <input type="text" id="google_api-model" name="google_api.model" placeholder="gpt-4o">
+                        </div>
+                    </div>
+                     <div class="client-settings" id="mistralSettings" style="display: none;">
+                        <div class="form-group">
+                            <label for="mistral_api-api-key">API Key</label>
+                            <input type="password" id="mistral_api-api-key" name="mistral_api.api-key">
+                        </div>
+                        <div class="form-group">
+                            <label for="mistral_api-api-url">API URL</label>
+                            <input type="text" id="mistral_api-api-url" name="mistral_api.api-url">
+                        </div>
+                        <div class="form-group">
+                            <label for="mistral_api-model">Model</label>
+                            <input type="text" id="mistral_api-model" name="mistral_api.model">
                         </div>
                     </div>
 

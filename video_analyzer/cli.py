@@ -14,7 +14,7 @@ import cProfile
 import pstats
 import io
 
-from .config import Config, get_client
+from .config import Config, get_client, get_config
 from .frame import VideoProcessor
 from .prompt import PromptLoader
 from .analyzer import VideoAnalyzer
@@ -22,6 +22,7 @@ from .audio_processor import AudioProcessor, AudioTranscript
 from .clients.ollama import OllamaClient
 from .clients.generic_openai_api import GenericOpenAIAPIClient
 from .clients.google_api import GoogleAPIClient
+from .clients.mistral_api import MistralAPIClient
 
 # Initialize logger at module level
 logger = logging.getLogger(__name__)
@@ -68,6 +69,8 @@ def create_client(client_type, client_config):
         return GenericOpenAIAPIClient(client_config)
     elif client_type == "google_api":
         return GoogleAPIClient(client_config)
+    elif client_type == "mistral_api":
+        return MistralAPIClient(client_config)
     else:
         raise ValueError(f"Unknown client type: {client_type}")
 
@@ -216,8 +219,11 @@ def main():
             )
         
         output_dir.mkdir(parents=True, exist_ok=True)
+        cfg = get_config(config, keys_to_remove = {'api_key'})
+
         results = {
             "metadata": {
+                'config': cfg,
                 "client": config.get("clients", {}).get("default"),
                 "model": model,
                 "whisper_model": config.get("audio", {}).get("whisper_model"),

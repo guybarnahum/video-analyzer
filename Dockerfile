@@ -28,4 +28,7 @@ COPY default_config.json /app/config/default_config.json
 
 EXPOSE 5000
 
+# <-- enable to debug crashed video-analyzer
+# CMD [ "bash", "-c", "while true; do sleep 60; done" ]
+
 CMD ["video-analyzer-ui", "--dev", "--host", "0.0.0.0", "--port", "5000"]

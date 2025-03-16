@@ -10,9 +10,34 @@ import uuid
 from pathlib import Path
 from flask import Flask, render_template, request, jsonify, send_file, Response
 from werkzeug.utils import secure_filename
+import tempfile
+import shutil
 
 # Initialize logger
 logger = logging.getLogger(__name__)
+
+def archive_dir(src_dir, archive_name, *exclude_patterns):
+    # Create a temporary directory and get its path
+    temp_dir_parent = tempfile.mkdtemp()
+    temp_dir = os.path.join(temp_dir_parent, "contents")
+    
+    if exclude_patterns:
+        # Create the ignore function using the provided patterns
+        ignore_function = shutil.ignore_patterns(*exclude_patterns)
+        # Use shutil.copytree with the ignore parameter
+        shutil.copytree(src_dir, temp_dir, ignore=ignore_function)
+    else:
+        # Copy without any filtering
+        shutil.copytree(src_dir, temp_dir)
+    
+    # Create the archive from the filtered directory
+    archive_path = shutil.make_archive(archive_name, 'zip', temp_dir)
+    
+    # Cleanup temporary directory
+    shutil.rmtree(temp_dir_parent)
+    
+    return archive_path
+
 
 class VideoAnalyzerUI:
     def __init__(self, host='localhost', port=5000, dev_mode=False):
@@ -185,57 +210,47 @@ class VideoAnalyzerUI:
             
         @self.app.route('/results/<session_id>')
         def get_results(session_id):
+            import shutil
+
             if session_id not in self.sessions:
                 return jsonify({'error': 'Invalid session'}), 401
                 
             session = self.sessions[session_id]
             results_dir = Path(session['results_dir'])
-            logger.debug(f"Looking for results in: {results_dir}")
             
             if not results_dir.exists():
-                logger.error(f"Results directory not found: {results_dir}")
-                return jsonify({'error': 'Results directory not found'}), 404
+                err_msg = f"Results directory not found: {results_dir}"
+                logger.error(err_msg)
+                return jsonify({'error': err_msg }), 404
             
             # List all files in results directory for debugging
-            logger.debug("Files in results directory:")
+            logger.debug(f"Archiving results directory {results_dir}:")
             for file in results_dir.glob('**/*'):
                 logger.debug(f"- {file}")
             
-            # Check both the results directory and the default 'output' directory
-            analysis_file = results_dir / 'analysis.json'
-            default_output = Path('output/analysis.json')
+            # Set the archive name inside the same directory
+            archive_name = os.path.join(results_dir, f'results-{session_id}' )
             
-            if default_output.exists():
-                logger.debug(f"Found analysis file in default output directory: {default_output}")
-                try:
-                    # Move the file to our results directory
-                    default_output.rename(analysis_file)
-                    logger.debug(f"Moved analysis file to: {analysis_file}")
-                except Exception as e:
-                    logger.error(f"Error moving analysis file: {e}")
-                    # If move fails, try to copy the content
-                    try:
-                        analysis_file.write_text(default_output.read_text())
-                        logger.debug("Copied analysis file content")
-                        default_output.unlink()
-                    except Exception as copy_error:
-                        logger.error(f"Error copying analysis file: {copy_error}")
-                        return jsonify({'error': 'Error accessing analysis file'}), 500
-            if not analysis_file.exists():
-                logger.error(f"Analysis file not found: {analysis_file}")
-                return jsonify({'error': 'Analysis file not found'}), 404
-                
+            # Create the ZIP archive - exclude the video
+            archive_path = archive_dir(results_dir, archive_name, "*.mp4", "*.mov")
+
+            logger.info(f"Archive created at {archive_path}")
+
+            # Check both the results directory and the default 'output' directory
+                 
             try:
                 return send_file(
-                    analysis_file,
-                    mimetype='application/json',
+                    archive_path,
+                    mimetype='application/zip',
                     as_attachment=True,
-                    download_name=f"analysis_{session['filename']}.json"
+                    download_name= os.path.basename(archive_path)
                 )
             except Exception as e:
-                logger.error(f"Error sending file: {e}")
-                return jsonify({'error': f'Error sending file: {str(e)}'}), 500
+                err_msg = f"Error sending file: {str(e)}"
+                logger.error(err_msg)
+                return jsonify({'error': err_msg }), 500
         
+
         @self.app.route('/get_config')
         def get_config():
             
@@ -247,11 +262,13 @@ class VideoAnalyzerUI:
                     config = json.load(f)
                 return jsonify(config)
             except FileNotFoundError as e:
-                logger.error(f'FileNotFoundError : {str(e)}')
-                return jsonify({"error": "Configuration file not found"}), 404
+                err_msg = f'Configuration file {config_path} : {str(e)}'
+                logger.error(err_msg)
+                return jsonify({"error": err_msg}), 404
             except json.JSONDecodeError as e:
-                logger.error(f'JSONDecodeError : {str(e)}')
-                return jsonify({"error": "Invalid JSON format in configuration file"}), 500
+                err_msg = f"Invalid JSON format in configuration file - {str(e)}"
+                logger.error( err_msg )
+                return jsonify({"error": err_msg }), 500
 
 
         @self.app.route('/cleanup/<session_id>', methods=['POST'])

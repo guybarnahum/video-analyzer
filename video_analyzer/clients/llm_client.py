@@ -6,9 +6,12 @@ TOKEN_PRICING = {
     "llama3.2-vision": {"prompt": 0.005, "completion": 0.015},  # Example values (per 1K tokens)
     "gpt-4-turbo": {"prompt": 0.01, "completion": 0.03},
     "gpt-4o": {"prompt": 0.0025, "completion": 0.01},  # GPT-4o pricing (per 1K tokens)
+    "pixtral-12b-2409": {"prompt": 0.00015, "completion": 0.00015}, # mistral 1K tokens
 }
 
 class LLMClient(ABC):
+
+
     def encode_image(self, image_path: str) -> str:
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode('utf-8')

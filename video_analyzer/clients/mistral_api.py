@@ -16,21 +16,36 @@ RATE_LIMIT_WAIT_TIME = 25  # seconds
 DEFAULT_WAIT_TIME = 25  # seconds
 
 '''
-curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=GEMINI_API_KEY" \
--H 'Content-Type: application/json' \
--X POST \
--d '{
-  "contents": [{
-    "parts":[{"text": "Explain how AI works"}]
-    }]
-   }'
+curl https://api.mistral.ai/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $MISTRAL_API_KEY" \
+  -d '{
+    "model": "pixtral-12b-2409",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "What’s in this image?"
+          },
+          {
+            "type": "image_url",
+            "image_url": "https://tripfixers.com/wp-content/uploads/2019/11/eiffel-tower-with-snow.jpeg"
+          }
+        ]
+      }
+    ],
+    "max_tokens": 300
+  }'
+
 '''
-class GoogleAPIClient(LLMClient):
+class MistralAPIClient(LLMClient):
     def __init__(self, config, max_retries: int = DEFAULT_MAX_RETRIES):
         self.api_key = config['api_key']
         api_url = config['api_url']
         self.base_url = api_url.rstrip('/')  # Remove trailing slash if present
-        self.generate_url = f"{self.base_url}/models/%model%/:generateContent"
+        self.generate_url = f"{self.base_url}/chat/completions"
         self.max_retries = max_retries
         self.usage = {}
 
@@ -38,47 +53,58 @@ class GoogleAPIClient(LLMClient):
         prompt: str,
         image_path: Optional[str] = None,
         stream: bool = False,
-        model: str = "gemini-2.0-flash",
+        model: str = None,
         temperature: float = 0.2,
         num_predict: int = 256) -> Dict[Any, Any]:
         """Generate response from OpenAI-compatible API."""
 
-        generate_url = self.generate_url.replace('%model%', model)
+        generate_url = self.generate_url
  
         # Prepare the request data
         if image_path:
             base64_image = self.encode_image(image_path)
             data = {
-                "contents": [
-                    {
-                        "parts": [
-                            {"text": prompt},
-                            {
-                                "inline_data": {
-                                    "mime_type": "image/jpeg",
-                                    "data": base64_image
+                "model": model,
+                "messages": [
+                                {
+                                    "role": "user",
+                                    "content": [
+                                        {
+                                            "type": "text",
+                                            "text": prompt
+                                        },
+                                        {
+                                            "type": "image_url",
+                                            "image_url": f"data:image/jpeg;base64,{base64_image}"
+                                        }
+                                    ]
                                 }
-                            }
-                        ]
-                    }
-                ]
+                ],
+                "max_tokens": 300
             }
         else:
             data = {
-                "contents": [
-                    {
-                        "parts": [
-                            {"text": prompt}
-                        ]
-                    }
-                ]
+                "model": model,
+                "messages": [
+                                {
+                                    "role": "user",
+                                    "content": [
+                                        {
+                                            "type": "text",
+                                            "text": prompt
+                                        }
+                                    ]
+                                }
+                ],
+                "max_tokens": 300
             }
 
-        # Add any additional parameters
-        params = {
-            "key": self.api_key
+                # Prepare headers
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
         }
-    
+
         # Initialize retry parameters
         retries = 0
         backoff_time = 2
@@ -86,29 +112,36 @@ class GoogleAPIClient(LLMClient):
         while retries <= self.max_retries:
             try:
                 # Make the API request
-                response = requests.post(generate_url, params=params, json=data)
+                response = requests.post(generate_url, headers=headers, json=data)
     
                 # Check if successful
                 if response.status_code == 200:
                     json_response = response.json()
+                    logger.info(f'json_response : {json_response}')
                     try:
                         '''
-                        "candidates": [
                             {
-                            "content": {
-                                "parts": [
-                                {
-                                    "text": "```\nFrame 24\nAction/Movement: ... Observe the construction site\n```"
+                                'id': '1922d1034f7e4cb19728ca2555b084f8', 
+                                'object': 'chat.completion', 
+                                'created': 1742059898, 
+                                'model': 'pixtral-12b-2409', 
+                                'choices': [
+                                    {'index': 0, 
+                                    'message': 
+                                        { 'role': 'assistant', 
+                                        'tool_calls': None, 
+                                        'content': '```\nFrame 24\n\...```'},
+                                        'finish_reason': 'stop'
+                                    }
+                                ], 
+                                'usage': {
+                                    'prompt_tokens': 2942, 
+                                    'total_tokens': 3162, 
+                                    'completion_tokens': 220
                                 }
-                                ],
-                                "role": "model"
-                            },
-                            "finishReason": "STOP",
-                            "avgLogprobs": -0.6573867797851562
                             }
-                        ],
                         '''
-                        message = json_response["candidates"][0]["content"]["parts"][0]["text"]
+                        message = json_response["choices"][0]["message"]["content"]
 
                     except Exception as e:
                         logger.error(f'json_response parse Error : {str(e)}')
@@ -120,32 +153,16 @@ class GoogleAPIClient(LLMClient):
 
                     # Extract token usage information
                     '''
-                    "usageMetadata": {
-                        "promptTokenCount": 2153,
-                        "candidatesTokenCount": 143,
-                        "totalTokenCount": 2296,
-                        "promptTokensDetails": [
-                            {
-                                "modality": "TEXT",
-                                "tokenCount": 347
-                            },
-                            {
-                                "modality": "IMAGE",
-                                "tokenCount": 1806
-                            }
-                        ],
-                        "candidatesTokensDetails": [
-                            {
-                                "modality": "TEXT",
-                                "tokenCount": 143
-                            }
-                        ]
-                    }
+                        'usage': {
+                            'prompt_tokens': 2942, 
+                            'total_tokens': 3162, 
+                            'completion_tokens': 220
+                        }
                     '''
                     # Calculate tokens
-                    prompt_tokens     = json_response["usageMetadata"]["promptTokenCount"    ] 
-                    completion_tokens = json_response["usageMetadata"]["candidatesTokenCount"] 
-                    total_tokens      = json_response["usageMetadata"]["totalTokenCount"     ] 
+                    prompt_tokens     = json_response["usage"]["prompt_tokens"    ] 
+                    completion_tokens = json_response["usage"]["completion_tokens"] 
+                    total_tokens      = json_response["usage"]["total_tokens"     ] 
 
                     # Calculate cost
                     model_pricing = TOKEN_PRICING.get(model, {"prompt": 0.0, "completion": 0.0})

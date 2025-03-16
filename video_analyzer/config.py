@@ -98,10 +98,27 @@ class Config:
             logger.error(f"Error saving user config: {e}")
             raise
 
+
+def filter_json(data, keys_to_remove):
+    if isinstance(data, dict):
+        return {
+            k: filter_json(v, keys_to_remove)
+            for k, v in data.items() if k not in keys_to_remove
+        }
+    elif isinstance(data, list):
+        return [filter_json(item, keys_to_remove) for item in data]
+    else:
+        return data  # Base case: return the value as is
+
+def get_config(config: Config, keys_to_remove):
+    filtered_config = filter_json( config.config, keys_to_remove)
+    return filtered_config
+
+
 def get_client(config: Config, client_type: str) -> dict:
     """Get the appropriate client configuration based on configuration."""
     
-    if client_type not in ['ollama','openai_api','google_api']:
+    if client_type not in ['ollama','openai_api','google_api','mistral_api']:
         raise ValueError(f"Invalid client type : {client_type}")
 
     try:

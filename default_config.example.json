@@ -15,6 +15,11 @@
             "api_url"   : "https://generativelanguage.googleapis.com/v1beta/",
             "api_key"   : "<google_api_key>",
             "model"     : "gemini-2.0-flash"
+        },
+        "mistral_api": {
+            "api_url"   : "https://api.mistral.ai/v1",
+            "api_key"   : "<mistral_api-key>",
+            "model"     : "pixtral-12b-2409"
         }
     },
     "prompt_dir": "prompts",
