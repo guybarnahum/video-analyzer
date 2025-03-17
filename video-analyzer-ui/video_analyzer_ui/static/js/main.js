@@ -319,6 +319,7 @@ function showConfigSection() {
     uploadSection.style.display = 'none';
     configSection.style.display = 'block';
     outputSection.style.display = 'none';
+
     updateCommandPreview();
 }
 
@@ -327,6 +328,8 @@ function showOutputSection() {
     configSection.style.display = 'none';
     outputSection.style.display = 'block';
     document.querySelector('.output-actions').style.display = 'none';
+
+    updateCommandPreview();
 }
 
 function toggleClientSettings() {
@@ -344,15 +347,23 @@ function updateCommandPreview() {
     const formData = new FormData(analysisForm);
     const args = getArgsFromFormData(formData)
 
-    let command = 'video-analyzer <video_path>';
+    let command = 'video-analyzer <uploaded video_path for session>';
     
     for (const key in args) {
         if (args.hasOwnProperty(key)) {
-            const value = args[key];
+            var value = args[key];
             if (value) {
                 if (key === 'keep-frames') {
                     command += ` --${key}`;
-                } else {
+                } 
+                else
+                if (key == 'api-key'){
+                    if (value.length > 6){
+                        value = value.substring(0, 6) + '****...';
+                    }
+                    command += ` --${key} ${value}`;
+                }
+                else {
                     command += ` --${key} ${value}`;
                 }
             }
@@ -551,6 +562,85 @@ function highlightDiff(oldText, newText) {
 
     return result;
 }
+
+const promptInput = document.getElementById("prompt");
+const promptForm = analysisForm
+const suggestionsBox = document.getElementById("suggestions");
+const MAX_PROMPTS = 5;
+
+function loadPrompts() {
+    return JSON.parse(localStorage.getItem("recentPrompts")) || [];
+}
+
+function savePrompt(newPrompt) {
+    let prompts = loadPrompts();
+    prompts = [newPrompt, ...prompts.filter(p => p !== newPrompt)].slice(0, MAX_PROMPTS);
+    localStorage.setItem("recentPrompts", JSON.stringify(prompts));
+}
+
+function removePrompt(promptToRemove) {
+    let prompts = loadPrompts().filter(p => p !== promptToRemove);
+    localStorage.setItem("recentPrompts", JSON.stringify(prompts));
+    showSuggestions();
+}
+
+function showSuggestions() {
+    const query = promptInput.value.trim().toLowerCase();
+    const prompts = loadPrompts().filter(p => p.toLowerCase().includes(query));
+    suggestionsBox.innerHTML = "";
+
+    if (prompts.length === 0 || !query) {
+        suggestionsBox.style.display = "none";
+        return;
+    }
+
+    prompts.forEach(prompt => {
+        const div = document.createElement("div");
+        div.classList.add("suggestion-item");
+        
+        const textSpan = document.createElement("span");
+        textSpan.textContent = prompt;
+
+        textSpan.addEventListener("click", () => {
+            // We have loaded a prompt
+            promptInput.value = prompt;
+            suggestionsBox.style.display = "none";
+            updateCommandPreview();
+        });
+
+        const removeBtn = document.createElement("button");
+        removeBtn.classList.add("fa-button");
+        removeBtn.innerHTML = '<i class="fas fa-trash"></i>';
+        removeBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            removePrompt(prompt);
+        });
+
+        div.appendChild(textSpan);
+        div.appendChild(removeBtn);
+        suggestionsBox.appendChild(div);
+    });
+
+    suggestionsBox.style.display = "block";
+}
+
+promptForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const newPrompt = promptInput.value.trim();
+    if (!newPrompt) return;
+
+    savePrompt(newPrompt);
+    promptInput.value = "";
+    suggestionsBox.style.display = "none";
+});
+
+promptInput.addEventListener("input", showSuggestions);
+
+document.addEventListener("click", (event) => {
+    if (!event.target.closest(".suggestion-input-container")) {
+        suggestionsBox.style.display = "none";
+    }
+});
 
 function createPollingProcess(session_id, interval = 1000) {
     let ix = 0;

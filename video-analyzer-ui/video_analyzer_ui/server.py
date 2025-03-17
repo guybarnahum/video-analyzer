@@ -39,6 +39,22 @@ def archive_dir(src_dir, archive_name, *exclude_patterns):
     return archive_path
 
 
+def sanitize_cmd_list(args):
+    sanitized_args = []
+    
+    i = 0
+    while i < len(args):
+        sanitized_args.append(args[i])
+        arg_match = args[i].lower().replace('-','_')
+        if 'api_key' in arg_match and i + 1 < len(args):
+            value = args[i+1][:6] + '****...'
+            sanitized_args.append(value)  # Replace API key value
+            i += 1  # Skip the next argument (the sensitive value)
+        i += 1
+    
+    return sanitized_args
+
+
 class VideoAnalyzerUI:
     def __init__(self, host='localhost', port=5000, dev_mode=False):
         self.app = Flask(__name__)
@@ -135,7 +151,6 @@ class VideoAnalyzerUI:
             
             # Add optional parameters
             params = request.get_json()
-            logger.info(f"params : {params}")
             
             for param, value in params.items():
                 if value:  # Only add parameters with values
@@ -157,7 +172,7 @@ class VideoAnalyzerUI:
             
             # Store command in session for streaming
             session['cmd'] = cmd
-            logger.info(f"cmd : {cmd}")
+            logger.debug(f"cmd : {sanitize_cmd_list(cmd)}")
 
             return jsonify({'message': 'Analysis started'})
             
@@ -171,7 +186,10 @@ class VideoAnalyzerUI:
                 return jsonify({'error': 'Analysis not started'}), 400
                 
             def generate_output():
-                logger.debug(f"Starting analysis with command: {' '.join(session['cmd'])}")
+
+                sanitized_cmd = sanitize_cmd_list(session['cmd'])
+                logger.info(f"Starting analysis with command: {' '.join(sanitized_cmd)}")
+                
                 try:
                     process = subprocess.Popen(
                         session['cmd'],

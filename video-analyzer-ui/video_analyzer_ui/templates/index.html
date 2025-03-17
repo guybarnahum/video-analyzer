@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Analyzer</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/diff@5.1.0/dist/diff.min.js"></script>
 </head>
 <body>
@@ -14,6 +15,11 @@
         </header>
 
         <main>
+            <!-- Command Preview -->
+            <div class="command-preview">
+                <h2>Command Preview</h2>
+                <pre id="commandPreview"></pre>
+            </div>
             <!-- Upload Section -->
             <section class="upload-section" id="uploadSection">
                 <div class="upload-area" id="dropZone">
@@ -96,7 +102,19 @@
                         </div>
                         <div class="form-group">
                             <label for="google_api-model">Model</label>
-                            <input type="text" id="google_api-model" name="google_api.model" placeholder="gpt-4o">
+                            <select id="google_api-model" name="google_api.model">
+                                <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+                                <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite</option>
+                                <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+                                <option value="gemini-1.5-flash-8b">gemini-1.5-flash-8b</option>
+                                
+                                <!--
+                                <option value="gemma-3-27b-it">gemma-3-27b-it</option>
+                                <option value="gemma-3-12b-it">gemma-3-12b-it</option>
+                                <option value="gemma-3-4b-it">gemma-3-4b-it</option>
+                                -->
+                                
+                            </select>
                         </div>
                     </div>
                      <div class="client-settings" id="mistralSettings" style="display: none;">
@@ -110,7 +128,10 @@
                         </div>
                         <div class="form-group">
                             <label for="mistral_api-model">Model</label>
-                            <input type="text" id="mistral_api-model" name="mistral_api.model">
+                            <select id="mistral_api-model" name="mistral_api.model">
+                                <option value="pixtral-large-latest">pixtral-large-latest</option>
+                                <option value="pixtral-12b-2409">pixtral-12b-2049</option>
+                            </select>
                         </div>
                     </div>
 
@@ -156,15 +177,10 @@
                         <label for="keep-frames">Keep Extracted Frames</label>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group suggestion-input-container">
                         <label for="prompt">Prompt</label>
                         <textarea id="prompt" name="prompt" placeholder="What would you like to know about the video?"></textarea>
-                    </div>
-
-                    <!-- Command Preview -->
-                    <div class="command-preview">
-                        <h3>Command Preview</h3>
-                        <pre id="commandPreview"></pre>
+                         <div id="suggestions" class="suggestions"></div>
                     </div>
 
                     <div class="form-actions">

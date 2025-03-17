@@ -119,7 +119,6 @@ def main():
 
     # Initialize components
     video_path = Path(args.video_path)
-    logger.info(f'args : {pformat(vars(args),indent=4)}')
     logger.info(f'Initialize components for {video_path}')
 
     output_dir_str = config.get("output_dir")
@@ -128,8 +127,6 @@ def main():
     client_type, client_config = get_client_config(config)
     client = create_client(client_type, client_config)
     
-    logger.info(f'client type : {client_type}, config : {client_config} ')
-
     model = client_config['model']
    
     prompt_loader = PromptLoader(config.get("prompt_dir"), config.get("prompts", []))

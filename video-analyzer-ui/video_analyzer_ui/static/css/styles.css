@@ -31,12 +31,12 @@ body {
 }
 
 header {
-    text-align: center;
+    text-align: left;
     margin-bottom: 2rem;
 }
 
 h1 {
-    font-size: 2.5rem;
+    font-size: 2rem;
     color: var(--primary-color);
     margin-bottom: 1rem;
 }
@@ -403,6 +403,74 @@ button {
 .secondary-button:hover {
     background-color: #5a6268;
 }
+
+/* Promopt Suggestions */
+.suggestions {
+    border: 1px solid #ccc;
+    max-height: 200px;
+    top: 100%;
+    overflow-y: auto;
+    position: absolute;
+    background: white;
+    width: calc(100% - 2px);
+    display: none;
+}
+.suggestion-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    cursor: pointer;
+}
+.suggestion-item:hover {
+    background: #f0f0f0;
+}
+.remove-btn {
+    background: red;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 12px;
+}
+.suggestion-input-container {
+    position: relative;
+}
+
+/* Font Awsome Buttons */
+.fa-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #666;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+  }
+  
+  .fa-button:hover {
+    background-color: #f0f0f0;
+    color: #ff0000;
+  }
+  
+  /* For a circular remove button */
+  .fa-button-circle {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+  
+  .fa-button-circle:hover {
+    background-color: #d32f2f;
+  }
 
 /* Loading */
 .loading {
