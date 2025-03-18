@@ -6,6 +6,7 @@ import logging
 from pprint import pformat
 import shutil
 import sys
+import time
 from typing import Optional
 import torch
 import torch.backends.mps
@@ -136,7 +137,8 @@ def main():
         frames = []
         frame_analyses = []
         video_description = None
-        
+        total_video_time = time.perf_counter()
+
         # Stage 1: Frame and Audio Processing
         if args.start_stage <= 1:
             # Initialize audio processor and extract transcript, the AudioProcessor accept following parameters that can be set in config.json:
@@ -189,24 +191,40 @@ def main():
             analyzer = VideoAnalyzer(client, model, prompt_loader, config.get("prompt", ""))
             frame_analyses = []
             token_usage = {
-                'total_tokens' : 0,
-                'total_cost' : 0,
+                'total_tokens'      : 0,
+                'prompt_tokens'     : 0,
+                'completion_tokens' : 0,
+                'total_cost'        : 0,
+                'model_cost'        : False
             }
 
+            total_frame_time = 0
+
             for frame in frames:
+
+                start_time = time.perf_counter()
                 analysis = analyzer.analyze_frame(frame)
+                end_time = time.perf_counter()
+                elapsed_time = end_time - start_time
+                analysis['time']  = elapsed_time
+                total_frame_time += elapsed_time
+                
                 frame_analyses.append(analysis)
 
                 output_frame_path = output_frames_dir / frame['name']
                 output_frame_json = output_frame_path.with_suffix(".json")
-                logging.info(f'frame json >> {output_frame_json}')
                 
                 with open(output_frame_json, "w") as f:
                     json.dump(analysis, f, indent=2)
 
+                
+                logging.info(f'frame json >> {output_frame_json}')
+               
                 if 'token_usage' in analysis:
-                    token_usage['total_tokens'] += analysis['token_usage']['total_tokens']
-                    token_usage['total_cost'  ] += analysis['token_usage']['cost'  ]
+                    token_usage['total_tokens'     ] += analysis['token_usage']['total_tokens']
+                    token_usage['prompt_tokens'    ] += analysis['token_usage']['prompt_tokens']
+                    token_usage['completion_tokens'] += analysis['token_usage']['completion_tokens']
+                    token_usage['total_cost'       ] += analysis['token_usage']['cost'  ]
 
         # Stage 3: Video Reconstruction
         if args.start_stage <= 3:
@@ -217,6 +235,8 @@ def main():
         
         output_dir.mkdir(parents=True, exist_ok=True)
         cfg = get_config(config, keys_to_remove = {'api_key'})
+
+        total_video_time = time.perf_counter() - total_video_time
 
         results = {
             "metadata": {
@@ -238,6 +258,8 @@ def main():
             } if transcript else None,
             "frame_analyses": frame_analyses,
             "token_usage" : token_usage,
+            "total_frame_time" : total_frame_time,
+            "total_video_time" : total_video_time,
             "video_description": video_description
         }
         

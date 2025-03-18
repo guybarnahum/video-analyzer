@@ -3,35 +3,44 @@ let currentSession = null;
 let outputEventSource = null;
 
 // DOM Elements
-const uploadSection=document.getElementById('uploadSection')
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
-const videoSection = document.getElementById('videoSection');
-const videoPlayer = document.getElementById('videoPlayer');
-const analysisContainer = document.getElementById("video-summary-analysis");
-    
-const framesSection = document.getElementById("framesSection");
-const configSection = document.getElementById('configSection');
-const outputSection = document.getElementById('outputSection');
-const analysisForm = document.getElementById('analysisForm');
-const outputText = document.getElementById('outputText');
 const commandPreview = document.getElementById('commandPreview');
-const downloadResults = document.getElementById('downloadResults');
-const newAnalysis = document.getElementById('newAnalysis');
-const clientSelect = document.getElementById('client');
-const ollamaSettings = document.getElementById('ollamaSettings');
-const openaiSettings = document.getElementById('openaiSettings');
-const googleSettings = document.getElementById('googleSettings');
-const mistralSettings = document.getElementById('mistralSettings');
+
+const uploadSection = document.getElementById('uploadSection')
+    const dropZone  = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+const videoSection = document.getElementById('videoSection');
+    const videoPlayer = document.getElementById('videoPlayer');
+
+const configSection = document.getElementById('configSection');
+    const analysisForm = document.getElementById('analysisForm');
+    const downloadResults = document.getElementById('downloadResults');
+    const newAnalysis = document.getElementById('newAnalysis');
+    const clientSelect = document.getElementById('client');
+        const ollamaSettings = document.getElementById('ollamaSettings');
+        const openaiSettings = document.getElementById('openaiSettings');
+        const googleSettings = document.getElementById('googleSettings');
+        const mistralSettings = document.getElementById('mistralSettings');
+
+const videoSummarySection= document.getElementById("videoSummarySection");
+    const analysisContainer = document.getElementById("videoSummaryAnalysis");
+
+const framesSection = document.getElementById("framesSection");
+const outputSection = document.getElementById('outputSection');
+const outputContainer=document.getElementById('outputContainer');
+const outputText = document.getElementById('outputText');
 
 // Event Listeners
 dropZone.addEventListener('click', () => fileInput.click());
 dropZone.addEventListener('dragover', handleDragOver);
 dropZone.addEventListener('dragleave', handleDragLeave);
 dropZone.addEventListener('drop', handleDrop);
+
 fileInput.addEventListener('change', handleFileSelect);
+
 analysisForm.addEventListener('submit', handleAnalysis);
 analysisForm.addEventListener('input', updateCommandPreview);
+
 clientSelect.addEventListener('change', toggleClientSettings);
 downloadResults.addEventListener('click', downloadAnalysisResults);
 newAnalysis.addEventListener('click', resetUI);
@@ -316,17 +325,19 @@ async function handleAnalysis(e) {
 
 // UI Updates
 function showConfigSection() {
-    uploadSection.style.display = 'none';
-    configSection.style.display = 'block';
-    outputSection.style.display = 'none';
+    uploadSection.style.display     = 'none';
+    videoSummarySection.style.display = 'none';
+    framesSection.style.display     = 'none';
+    configSection.style.display     = 'block';
+    outputSection.style.display     = 'none';
 
     updateCommandPreview();
 }
 
 function showOutputSection() {
-    uploadSection.style.display = 'none';
-    configSection.style.display = 'none';
-    outputSection.style.display = 'block';
+    uploadSection.style.display     = 'none';
+    configSection.style.display     = 'none';
+    outputSection.style.display     = 'block';
     document.querySelector('.output-actions').style.display = 'none';
 
     updateCommandPreview();
@@ -435,19 +446,23 @@ function resetUI() {
     analysisForm.reset();
     removeChildNodes(analysisContainer)
     removeChildNodes(framesSection)
-
-    // Reset UI
-    uploadSection.style.display = 'block';
-    configSection.style.display = 'none';
-    outputSection.style.display = 'none';
     outputText.textContent = '';
     fileInput.value = '';
-    
+  
+    // Reset UI
+    uploadSection.style.display     = 'block';
+    configSection.style.display     = 'none';
+    videoSummarySection.style.display = 'none';
+    framesSection.style.display     = 'none';
+    outputSection.style.display     = 'none';
+  
     // Reset client settings
     loadDefaultConfig();
 }
 
 function renderFrame(frameData, session_id) {
+
+    framesSection.style.display = 'flex';
 
     try{
         const frameId = `frame-${frameData.frame.idx}`;
@@ -477,17 +492,20 @@ function renderFrame(frameData, session_id) {
                 response = highlightDiff( prev_raw_response, raw_response);
             }
         }
+        
+        const frame_time_ms = Math.round(frameData.time * 1000)
 
         frameElement.innerHTML = `
             <h3>Key Frame ${frameData.frame.idx} : #${frameData.frame.num}</h3>
 
             <div class="info-row">
-                <span class="left">${frameData.frame.timestamp.toFixed(2)}s</span>
+                <span class="left">offset ${frameData.frame.timestamp.toFixed(2)}s</span>
                 <span class="right">Cost: $${frameData.token_usage.cost.toFixed(4).toLocaleString()}</span>
             </div>
             <div class="info-row">
-                <span class="left"><strong>Score:</strong> ${frameData.frame.score.toFixed(2)}</span>
-                <span class="right">${frameData.token_usage.total_tokens.toLocaleString()} tokens</span>
+                <span class="left smaller"><strong>Score:</strong> ${frameData.frame.score.toFixed(2)}</span>
+                <span class="center smaller">time: ${frame_time_ms.toLocaleString()}ms</span>
+                <span class="right smaller">${frameData.token_usage.total_tokens.toLocaleString()} tokens</span>
             </div>
 
             <img src="/serve_file/${session_id}/${frameData.frame.name}" 
@@ -504,11 +522,26 @@ function renderFrame(frameData, session_id) {
 
 function renderVideoAnalysis(analysisData, session_id) {
     
-    if (analysisContainer) {
-
+    if (videoSummarySection) {
+        videoSummarySection.style.display = 'block';
+        analysisContainer.style.display = 'block';
+ 
         // Extract data
-        const { total_tokens, total_cost } = analysisData.token_usage;
+        const model        = analysisData['metadata']['model'];
+        const frame_num    = analysisData['metadata']['frames_processed'];
 
+        const total_tokens = analysisData['token_usage']['total_tokens'  ].toLocaleString();
+        const total_cost   = analysisData['token_usage']['total_cost'    ].toLocaleString();
+        const prompt_tokens= analysisData['token_usage']['prompt_tokens' ].toLocaleString();
+        const comp_tokens  = analysisData['token_usage']['completion_tokens' ].toLocaleString();
+        const total_frame_time = analysisData.total_frame_time.toFixed(3).toLocaleString();
+        const total_video_time = analysisData.total_video_time.toFixed(3).toLocaleString();
+        var time_per_frame   = 'n/a';
+
+        if (frame_num){
+            time_per_frame = (total_frame_time / frame_num).toFixed(3);
+        }
+        
         // Remove code block markers from response text
         let response = analysisData.video_description.response;
         response = response.replace(/```/g, "").trim();
@@ -517,8 +550,16 @@ function renderVideoAnalysis(analysisData, session_id) {
         analysisContainer.innerHTML = `
             <div class="analysis-content">
                 <h2>Video Analysis</h2>
-                <p><strong>Total Tokens Used:</strong> ${total_tokens.toLocaleString()}</p>
-                <p><strong>Total Cost:</strong> $${total_cost.toFixed(3).toLocaleString()}</p>
+
+                <p><strong>Model:</strong> <span><code>${model}</code></span></p>
+                <p><strong>Total Cost:</strong> <span>$${total_cost}</span></p>
+                <p><strong>Total Tokens Used:</strong> <span>${total_tokens}</span></p>
+                <p><strong>Prompt Tokens:</strong> <span>${prompt_tokens}</span></p>
+                <p><strong>Completion Tokens:</strong> <span>${comp_tokens}</span></p>
+                <p><strong>Total Time:</strong> <span>${total_video_time} sec</span></p>
+                <p><strong>Frame Time:</strong> <span>${total_frame_time} sec</span></p>
+                <p><strong>Average Time Per Frame:</strong> <span>${time_per_frame} sec</span></p>
+
                 <br>
                 <div class="video-description">${response}</div>
             </div>
@@ -563,6 +604,17 @@ function highlightDiff(oldText, newText) {
     return result;
 }
 
+document.getElementById("toggleOutput").addEventListener("click", function () {
+    
+    if (outputContainer.style.display === "none" || outputContainer.style.display === "") {
+        outputContainer.style.display = "block";
+        this.textContent = "Hide Logs";
+    } else {
+        outputContainer.style.display = "none";
+        this.textContent = "Show Logs";
+    }
+});
+
 const promptInput = document.getElementById("prompt");
 const promptForm = analysisForm
 const suggestionsBox = document.getElementById("suggestions");
@@ -586,10 +638,15 @@ function removePrompt(promptToRemove) {
 
 function showSuggestions() {
     const query = promptInput.value.trim().toLowerCase();
-    const prompts = loadPrompts().filter(p => p.toLowerCase().includes(query));
+    const prompts = loadPrompts()
+
     suggestionsBox.innerHTML = "";
 
-    if (prompts.length === 0 || !query) {
+    if (query.length){ // filter by query - if we have one - otherwise show all
+        prompts.filter(p => p.toLowerCase().includes(query));
+    }
+
+    if (prompts.length === 0) { 
         suggestionsBox.style.display = "none";
         return;
     }
@@ -634,6 +691,7 @@ promptForm.addEventListener("submit", (event) => {
     suggestionsBox.style.display = "none";
 });
 
+promptInput.addEventListener("focus", showSuggestions);
 promptInput.addEventListener("input", showSuggestions);
 
 document.addEventListener("click", (event) => {
@@ -710,4 +768,5 @@ function createPollingProcess(session_id, interval = 1000) {
 }
 
 // Initialize UI
+resetUI();
 toggleClientSettings();

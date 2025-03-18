@@ -199,35 +199,30 @@ textarea {
     grid-column: span 1;
 }
 }
-  
-/* Output Section */
-.output-container {
-    background: #f8f9fa;
-    border-radius: 4px;
-    padding: 1rem;
-    max-height: 400px;
-    overflow-y: auto;
-    position: relative;
-}
 
 /* Video Section */
 .video-section {
     display: flex; /* Enables flexbox */
+
+    width: 100%; /* Make the container take the full width of its parent section */
+    aspect-ratio: 16 / 9; /* Optional: Set a default aspect ratio (common for video) */
+    overflow: hidden; /* Prevent potential overflow if aspect ratio doesn't perfectly match */
+    
     justify-content: center; /* Centers horizontally */
     align-items: center; /* Centers vertically */
-    height: 50vh; /* Makes section take full viewport height */
     background-color: #000; /* Optional: adds a black background for contrast */
 }
 
 video {
-    max-width: 100%; /* Ensures responsiveness */
-    height: auto; /* Keeps aspect ratio */
+    display: block; /* Prevent extra space below inline elements */
+    width: 100%; /* Make the video element fill the width of its container */
+    height: auto; /* Let the height adjust automatically based on the aspect ratio */
+  
     border-radius: 10px; /* Optional: adds rounded corners */
     box-shadow: 0 4px 10px rgba(255, 255, 255, 0.3); /* Soft glow effect */
 }
 
 /* Frames Section */
-
 .frames-section {
     display: flex;
     flex-wrap: wrap;
@@ -300,8 +295,17 @@ video {
     text-align: left;
 }
 
+.center {
+    text-align: center;
+}
+
 .right {
     text-align: right;
+}
+
+.smaller {
+    font-size: 0.8em; /* Make the text 80% of its parent's font size */
+    font-weight: 300; /* Make the text thinner (common values: 100, 200, 300 for thin) */  
 }
 
 .text-added {
@@ -321,50 +325,78 @@ video {
 
 
 /* Video Analysis Content */
+.video-summary-analysis {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    width: 100%;
+}
+
 .analysis-content {
     background-color: #f8f9fa;
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     padding: 1.5rem;
     margin: 0 auto;
   }
   
   .analysis-content h2 {
-    color: #2c3e50;
-    border-bottom: 2px solid #3498db;
-    padding-bottom: 0.5rem;
-    margin-bottom: 1.5rem;
-    font-size: 1.8rem;
+    margin-top: 0;
+    text-align: center;
+    color: #333;
+    font-size: 24px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 8px;
   }
   
   .analysis-content p {
-    font-size: 1.1rem;
-    margin-bottom: 0.5rem;
-    color: #34495e;
+    
+    display: grid;
+    grid-template-columns: 150px auto; 
+    gap: 10px;
+
+    color: #555;
+    line-height: 1.6;
+    margin: 8px 0;
   }
   
-  .analysis-content strong {
-    color: #2c3e50;
-    font-weight: 600;
+  .analysis-content p strong {
+    color: #222;
   }
   
   .video-description {
-    margin-top: 1rem;
-    padding: 1rem;
-    background-color: white;
-    border-left: 4px solid #3498db;
-    border-radius: 0 4px 4px 0;
-    line-height: 1.6;
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #007BFF;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-top: 10px;
+    color: #333;
     white-space: pre-wrap;
-  }
+}
   
+/* Collapsible */
 
-  /* Add this for cost highlighting */
-  .analysis-content p:nth-child(3) strong {
-    color: #e74c3c;
-  }
-  
-  /* Add this for responsive design */
+.collapsible-container {
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+.output-header {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Spacing between buttons */
+}
+
+.output-header button {
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+}
+
+/* Add this for responsive design */
   @media (max-width: 600px) {
     .analysis-content {
       padding: 1rem;
@@ -400,8 +432,13 @@ button {
     background-color: var(--primary-hover);
 }
 
+.secondary-button {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
 .secondary-button:hover {
-    background-color: #5a6268;
+    background-color: var(--primary-hover);
 }
 
 /* Promopt Suggestions */
@@ -504,17 +541,28 @@ button {
     margin-top: 1rem;
 }
 
+/* Output Section */
+.output-container {
+    background: #f8f9fa;
+    border-radius: 4px;
+    padding: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+    position: relative;
+}
+
 .output-container pre {
     font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
     font-size: 0.5rem;
     white-space: pre-wrap;
     word-break: break-word;
+    overflow: auto; /* Makes sure scrolling applies to large content */
+    max-height: 100%; /* Ensures it stays within .output-container */
 }
 
 .output-actions {
     display: flex;
     gap: 1rem;
-    margin-top: 1rem;
 }
 
 /* API key masking */
